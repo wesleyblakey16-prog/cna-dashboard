@@ -107,7 +107,7 @@
     display:flex;
     flex-direction:column;
     gap:10px;
-    max-height: calc(100vh - 170px);
+    max-height: calc(100vh - 220px);
     overflow:auto;
     padding-right: 4px;
   }
@@ -142,19 +142,6 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .patientItem .badge{
-    font-size:12px;
-    padding:6px 8px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    background:#f8fafc;
-    color:var(--muted);
-    flex:0 0 auto;
-  }
-  .patientItem.active{
-    background: var(--primaryBg);
-    border-color: rgba(37,99,235,0.35);
-  }
 
   /* Patient tile status icons (chips) */
   .statusRow{
@@ -178,6 +165,11 @@
   .chip-tele { background:#eef2ff; border-color: rgba(37,99,235,0.25); }
   .chip-rn   { background:#fff1f2; border-color: rgba(185,28,28,0.25); }
   .chip-bat  { background:#fff7ed; border-color: rgba(234,88,12,0.25); }
+
+  .patientItem.active{
+    background: var(--primaryBg);
+    border-color: rgba(37,99,235,0.35);
+  }
 
   /* Tabs */
   .tabBar{
@@ -242,7 +234,7 @@
     <div class="headerRow">
       <div>
         <h1>CNA Task Dashboard</h1>
-        <p class="muted">offline • per-patient logs • icons for reminders</p>
+        <p class="muted">filter by RN • icons for tele/RN/battery reminders</p>
       </div>
       <div class="pill">
         <span>👤</span>
@@ -266,6 +258,9 @@
         <label>Filter by Room #</label>
         <input id="roomFilter" placeholder="e.g., 214" inputmode="numeric" oninput="renderSidebar()" />
 
+        <label>Filter by RN</label>
+        <select id="rnFilter" onchange="renderSidebar()"></select>
+
         <label>Quick select</label>
         <select id="patientSelect" onchange="loadPatient(true)"></select>
 
@@ -286,6 +281,10 @@
           <button type="button" class="btnPrimary" onclick="addRN()">Add RN</button>
           <button type="button" class="btnDanger" onclick="clearRNList()">Clear RN List</button>
         </div>
+
+        <p class="muted" style="margin-top:10px;">
+          Tip: choose an RN above to show only their patients.
+        </p>
       </div>
     </div>
 
@@ -574,10 +573,10 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = "cna_dashboard_icons_v1";
+const STORAGE_KEY = "cna_dashboard_rn_filter_v1";
 let storageOK = false;
 
-let patients = {}; // { [name]: { room, bed, admission, rnNotified, primaryRN, lastTeleBatteryCheckMs, logs: [] } }
+let patients = {};
 let currentPatient = null;
 
 let rnList = [];
@@ -682,6 +681,33 @@ function rebuildRNSelects(){
   document.getElementById("commEscRN").innerHTML  = buildRNOptionsHTML(true);
 
   applyPatientRNToUI();
+  buildRNFilterOptions();
+}
+
+/* RN filter options */
+function buildRNFilterOptions(){
+  const sel = document.getElementById("rnFilter");
+  if(!sel) return;
+
+  const current = sel.value || "__ALL__";
+
+  const rnSet = new Set(rnList);
+  Object.values(patients).forEach(p => {
+    if(p && p.primaryRN) rnSet.add(String(p.primaryRN));
+  });
+
+  const rns = Array.from(rnSet)
+    .map(x => String(x).trim())
+    .filter(Boolean)
+    .sort((a,b)=>a.localeCompare(b));
+
+  sel.innerHTML = `<option value="__ALL__">All RNs</option>`;
+  rns.forEach(rn => {
+    sel.innerHTML += `<option value="${escapeHtml(rn)}">${escapeHtml(rn)}</option>`;
+  });
+
+  if([...sel.options].some(o => o.value === current)) sel.value = current;
+  else sel.value = "__ALL__";
 }
 
 /* Tabs */
@@ -716,7 +742,7 @@ function toggleEscalationUI(kind){
   }
 }
 
-/* Tele helpers + banner */
+/* Tele banner */
 function isTelePatient(p){ return String(p.admission || "").includes("Tele"); }
 
 let rnInterval = null;
@@ -792,20 +818,28 @@ function batteryOverdue(p){
   if(!last) return true;
   return (Date.now() - last) > (2 * 60 * 60 * 1000);
 }
+
 function renderSidebar(){
   const list = document.getElementById("patientList");
-  const filter = document.getElementById("roomFilter").value.trim();
-  const sorted = getSortedPatientNames();
+  const roomFilter = document.getElementById("roomFilter").value.trim();
+  const rnFilterSel = document.getElementById("rnFilter");
+  const rnFilter = rnFilterSel ? rnFilterSel.value : "__ALL__";
 
+  const sorted = getSortedPatientNames();
   list.innerHTML = "";
 
   const filtered = sorted.filter(name=>{
     const p = patients[name] || {};
-    return !filter ? true : String(p.room||"").includes(filter);
+    const roomOK = !roomFilter ? true : String(p.room||"").includes(roomFilter);
+
+    const assignedRN = String(p.primaryRN || "").trim();
+    const rnOK = (rnFilter === "__ALL__") ? true : (assignedRN === rnFilter);
+
+    return roomOK && rnOK;
   });
 
   if(filtered.length === 0){
-    list.innerHTML = `<div class="muted">No patients match that room filter.</div>`;
+    list.innerHTML = `<div class="muted">No patients match the current filters.</div>`;
     return;
   }
 
@@ -862,7 +896,7 @@ function savePatientRNFromSelect(){
   if(val){
     patients[currentPatient].primaryRN = val;
     document.getElementById("patientRNText").value = "";
-    saveStore(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
+    saveStore(); rebuildRNSelects(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
   }
 }
 function savePatientRNFromText(){
@@ -871,7 +905,7 @@ function savePatientRNFromText(){
   if(val){
     patients[currentPatient].primaryRN = val;
     document.getElementById("patientRNSelect").value = "";
-    saveStore(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
+    saveStore(); rebuildRNSelects(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
   }
 }
 
@@ -910,7 +944,6 @@ function addPatient(){
   patients[name].admission = admission;
   patients[name].primaryRN = chosenRN;
 
-  // Tele patients default rnNotified false (shows 👩‍⚕️ until checked)
   if(isTelePatient(patients[name])) patients[name].rnNotified = false;
   else patients[name].rnNotified = !!patients[name].rnNotified;
 
@@ -928,6 +961,7 @@ function addPatient(){
 
   rebuildPatientSelect();
   rebuildRNSelects();
+  buildRNFilterOptions();
   renderSidebar();
   loadPatient(true);
   saveStore();
@@ -961,6 +995,7 @@ function loadPatient(forceShow){
   rebuildRNSelects();
   applyPatientRNToUI();
   refreshReview();
+  buildRNFilterOptions();
   renderSidebar();
   updateHeaderMeta();
 
@@ -984,6 +1019,7 @@ function logToCurrentPatient(type, details){
 
   saveStore();
   refreshReview();
+  buildRNFilterOptions();
   renderSidebar();
   updateHeaderMeta();
   toast("Saved");
@@ -1184,6 +1220,7 @@ function importJSON(){
         saveStore();
         rebuildPatientSelect();
         rebuildRNSelects();
+        buildRNFilterOptions();
         renderSidebar();
         loadPatient(true);
         toast("Imported");
@@ -1203,32 +1240,10 @@ function wipeAll(){
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   rebuildPatientSelect();
   rebuildRNSelects();
+  buildRNFilterOptions();
   renderSidebar();
   loadPatient(true);
   toast("Wiped");
-}
-function clearPatientLogs(){
-  if(!currentPatient) return;
-  if(!confirm(`Clear ALL logs for ${currentPatient}?`)) return;
-  patients[currentPatient].logs = [];
-  saveStore();
-  refreshReview();
-  renderSidebar();
-  updateHeaderMeta();
-  toast("Cleared logs");
-}
-function exportPatientCSV(){
-  if(!currentPatient || !patients[currentPatient]) return alert("Select a patient first.");
-  const p = patients[currentPatient];
-  const rows = [["Patient","Room","Bed","Admission","PrimaryRN","Type","Details","Time"]];
-  (p.logs||[]).forEach(l=>{
-    rows.push([currentPatient,p.room,p.bed,p.admission,p.primaryRN||"",l.type,l.details,l.time]);
-  });
-  const csv = rows.map(r => r.map(v => {
-    const s = String(v ?? "");
-    return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
-  }).join(",")).join("\n");
-  downloadFile(`${String(currentPatient).replace(/[^a-z0-9_-]+/gi,"_")}_logs.csv`, csv, "text/csv;charset=utf-8");
 }
 
 /* Init */
@@ -1238,7 +1253,9 @@ function init(){
 
   rebuildPatientSelect();
   rebuildRNSelects();
+  buildRNFilterOptions();
   renderSidebar();
+
   document.getElementById("sortModeLabel").textContent = (sortMode === "room") ? "Room" : "Name";
 
   if(currentPatient && patients[currentPatient]){
