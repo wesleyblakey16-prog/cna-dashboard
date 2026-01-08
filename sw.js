@@ -1,4 +1,4 @@
-const CACHE_NAME = "cna-dashboard-v4";
+const CACHE_NAME = "cna-dashboard-v6";
 const ASSETS = [
   "./",
   "./index.html",
