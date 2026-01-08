@@ -58,7 +58,7 @@
   }
   @media (min-width: 820px){
     .shell{
-      grid-template-columns: 260px 1fr; /* smaller sidebar */
+      grid-template-columns: 260px 1fr;
       align-items:start;
     }
   }
@@ -156,20 +156,31 @@
     border-color: rgba(37,99,235,0.35);
   }
 
-  /* Flash/pulse attention for reminders */
-  @keyframes pulseAttention {
-    0%   { box-shadow: 0 0 0 rgba(185,28,28,0.0); transform: scale(1.0); }
-    50%  { box-shadow: 0 0 0 8px rgba(185,28,28,0.10); transform: scale(1.01); }
-    100% { box-shadow: 0 0 0 rgba(185,28,28,0.0); transform: scale(1.0); }
+  /* FLASH until RN notified */
+  @keyframes flashAttention {
+    0%   { transform: scale(1.0); box-shadow: 0 0 0 rgba(185,28,28,0.0); }
+    50%  { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(185,28,28,0.18); }
+    100% { transform: scale(1.0); box-shadow: 0 0 0 rgba(185,28,28,0.0); }
   }
-  .attention{
-    border-color: rgba(185,28,28,0.35) !important;
-    animation: pulseAttention 1.6s infinite;
+  .flash-until-rn{
+    border-color: rgba(185,28,28,0.45) !important;
+    animation: flashAttention 1s infinite;
   }
-  .attention .badge{
-    border-color: rgba(185,28,28,0.35);
+  .flash-until-rn .badge{
+    border-color: rgba(185,28,28,0.45);
     color: #991b1b;
     background: #fff1f2;
+  }
+
+  /* Softer reminder (battery overdue) */
+  @keyframes pulseSoft {
+    0% { transform: scale(1.0); }
+    50% { transform: scale(1.01); }
+    100% { transform: scale(1.0); }
+  }
+  .attention{
+    border-color: rgba(37,99,235,0.35) !important;
+    animation: pulseSoft 2s infinite;
   }
 
   /* Tabs */
@@ -235,7 +246,7 @@
     <div class="headerRow">
       <div>
         <h1>CNA Task Dashboard</h1>
-        <p class="muted">iPad-friendly • offline • per-patient logs • optional escalation</p>
+        <p class="muted">offline • per-patient logs • tele RN tile flashes until notified</p>
       </div>
       <div class="pill">
         <span>👤</span>
@@ -279,10 +290,6 @@
           <button type="button" class="btnPrimary" onclick="addRN()">Add RN</button>
           <button type="button" class="btnDanger" onclick="clearRNList()">Clear RN List</button>
         </div>
-
-        <p class="muted" style="margin-top:10px;">
-          This list feeds RN assignment + escalation pickers.
-        </p>
       </div>
     </div>
 
@@ -366,7 +373,7 @@
 
         <div id="rnBanner" class="rnBanner hidden">
           ⚠️ PRIMARY RN NOT NOTIFIED (Tele patient)
-          <small>Mark RN Notified in Telemetry (or log a Communication escalation) after you notify them.</small>
+          <small>Tile flashes until RN Notified is checked.</small>
         </div>
 
         <!-- CARE -->
@@ -397,7 +404,6 @@
 
           <div class="divider"></div>
 
-          <!-- OPTIONAL escalation -->
           <div class="toggle">
             <div class="left"><strong>Escalated to RN</strong><span>Optional</span></div>
             <input type="checkbox" id="careEscalated" onchange="toggleEscalationUI('care')" />
@@ -443,7 +449,6 @@
 
           <div class="divider"></div>
 
-          <!-- OPTIONAL escalation -->
           <div class="toggle">
             <div class="left"><strong>Escalated to RN</strong><span>Optional</span></div>
             <input type="checkbox" id="teleEscalated" onchange="toggleEscalationUI('tele')" />
@@ -463,7 +468,7 @@
           </div>
 
           <div class="toggle" style="margin-top:10px;">
-            <div class="left"><strong>RN Notified</strong><span>(Optional) — banner nags until checked for tele pts</span></div>
+            <div class="left"><strong>RN Notified</strong><span>(Required to stop tele flashing)</span></div>
             <input type="checkbox" id="rnNotified" onchange="handleRNNotified()" />
           </div>
 
@@ -511,7 +516,7 @@
           </div>
         </div>
 
-        <!-- COMMUNICATION / NOTES -->
+        <!-- COMMUNICATION -->
         <div id="comm" class="card hidden">
           <h3>Communication / Notes</h3>
 
@@ -576,18 +581,16 @@
 /* =========================
    Storage + State
 ========================= */
-const STORAGE_KEY = "cna_dashboard_optional_escalation_v1";
+const STORAGE_KEY = "cna_dashboard_flash_until_rn_v1";
 let storageOK = false;
 
-let patients = {};          // { [name]: { room, bed, admission, rnNotified, primaryRN, lastTeleBatteryCheckMs, logs: [] } }
+let patients = {}; // { [name]: { room, bed, admission, rnNotified, primaryRN, lastTeleBatteryCheckMs, logs: [] } }
 let currentPatient = null;
 
 let rnList = [];
-let sortMode = "room"; // "room" or "name"
+let sortMode = "room";
 
-/* =========================
-   Storage helpers
-========================= */
+/* Storage */
 function checkStorage(){
   try{
     const testKey = "__cna_test__";
@@ -621,9 +624,7 @@ function loadStore(){
   }catch(e){}
 }
 
-/* =========================
-   Utility
-========================= */
+/* Utility */
 function toast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -651,9 +652,7 @@ function normalizeName(s){
   return String(s || "").trim().replace(/\s+/g, " ");
 }
 
-/* =========================
-   RN list
-========================= */
+/* RN list */
 function addRN(){
   const raw = document.getElementById("rnAddName").value;
   const name = normalizeName(raw);
@@ -678,9 +677,7 @@ function clearRNList(){
 function buildRNOptionsHTML(includeNone=true){
   let html = "";
   if(includeNone) html += `<option value="">— Select RN —</option>`;
-  rnList.forEach(rn => {
-    html += `<option value="${escapeHtml(rn)}">${escapeHtml(rn)}</option>`;
-  });
+  rnList.forEach(rn => { html += `<option value="${escapeHtml(rn)}">${escapeHtml(rn)}</option>`; });
   return html;
 }
 function rebuildRNSelects(){
@@ -694,25 +691,19 @@ function rebuildRNSelects(){
   applyPatientRNToUI();
 }
 
-/* =========================
-   Tabs
-========================= */
+/* Tabs */
 function setActiveTab(tab){
   document.querySelectorAll(".tabBtn").forEach(b=>b.classList.remove("active"));
   const btn = document.getElementById("tabBtn-" + tab);
   if(btn) btn.classList.add("active");
 }
 function showTab(tab){
-  ["care","tele","activity","oral","comm","review"].forEach(id => {
-    document.getElementById(id).classList.add("hidden");
-  });
+  ["care","tele","activity","oral","comm","review"].forEach(id => document.getElementById(id).classList.add("hidden"));
   document.getElementById(tab).classList.remove("hidden");
   setActiveTab(tab);
 }
 
-/* =========================
-   Optional escalation UI toggles
-========================= */
+/* Escalation UI toggles */
 function toggleEscalationUI(kind){
   const map = {
     care: { cb:"careEscalated", sec:"careEscSection", rn:"careEscRN" },
@@ -724,19 +715,17 @@ function toggleEscalationUI(kind){
   const on = document.getElementById(m.cb).checked;
   document.getElementById(m.sec).classList.toggle("hidden", !on);
 
-  // Default RN to patient primary if toggled on and empty
   if(on && currentPatient && patients[currentPatient]){
-    const p = patients[currentPatient];
-    const assigned = p.primaryRN || "";
-    if(assigned && document.getElementById(m.rn).value === ""){
-      if(rnList.includes(assigned)) document.getElementById(m.rn).value = assigned;
+    const assigned = patients[currentPatient].primaryRN || "";
+    if(assigned && document.getElementById(m.rn).value === "" && rnList.includes(assigned)){
+      document.getElementById(m.rn).value = assigned;
     }
   }
 }
 
-/* =========================
-   RN banner for tele pts
-========================= */
+/* Tele helpers + banner */
+function isTelePatient(p){ return String(p.admission || "").includes("Tele"); }
+
 let rnInterval = null;
 let rnFlash = false;
 function startRNWarning(){
@@ -761,8 +750,7 @@ function handleRNNotified(){
   if(!currentPatient || !patients[currentPatient]) return;
   patients[currentPatient].rnNotified = document.getElementById("rnNotified").checked;
 
-  const admission = patients[currentPatient].admission || "";
-  const isTele = admission.includes("Tele");
+  const isTele = isTelePatient(patients[currentPatient]);
   if(isTele && !patients[currentPatient].rnNotified) startRNWarning();
   else stopRNWarning();
 
@@ -770,9 +758,7 @@ function handleRNNotified(){
   renderSidebar();
 }
 
-/* =========================
-   Patient pickers
-========================= */
+/* Patient pickers */
 function rebuildPatientSelect(){
   const sel = document.getElementById("patientSelect");
   sel.innerHTML = `<option value="">Select a patient</option>`;
@@ -782,9 +768,7 @@ function rebuildPatientSelect(){
     opt.textContent = name;
     sel.appendChild(opt);
   });
-  if(currentPatient && patients[currentPatient]){
-    sel.value = currentPatient;
-  }
+  if(currentPatient && patients[currentPatient]) sel.value = currentPatient;
 }
 function patientSortKey(name){
   const p = patients[name] || {};
@@ -797,8 +781,7 @@ function getSortedPatientNames(){
   const names = Object.keys(patients);
   if(sortMode === "name") return names.sort((a,b)=> a.localeCompare(b));
   return names.sort((a,b)=>{
-    const ka = patientSortKey(a);
-    const kb = patientSortKey(b);
+    const ka = patientSortKey(a), kb = patientSortKey(b);
     if(ka.roomKey !== kb.roomKey) return ka.roomKey - kb.roomKey;
     if(ka.bedKey !== kb.bedKey) return ka.bedKey.localeCompare(kb.bedKey);
     return ka.nameKey.localeCompare(kb.nameKey);
@@ -811,38 +794,31 @@ function sortModeToggle(){
   document.getElementById("sortModeLabel").textContent = (sortMode === "room") ? "Room" : "Name";
 }
 
-/* =========================
-   Attention logic (flash sidebar)
-   - Tele + RN not notified
-   - Tele battery check overdue (> 2 hours since last "battery checked" save)
-========================= */
-function isTelePatient(p){
-  return String(p.admission || "").includes("Tele");
-}
+/* Battery overdue (soft reminder) */
 function batteryOverdue(p){
   if(!isTelePatient(p)) return false;
   const last = Number(p.lastTeleBatteryCheckMs || 0);
-  if(!last) return true; // never done => overdue
-  const ageMs = Date.now() - last;
-  return ageMs > (2 * 60 * 60 * 1000); // 2 hours
+  if(!last) return true;
+  return (Date.now() - last) > (2 * 60 * 60 * 1000);
+}
+
+/* Flash logic */
+function needsRNFlash(p){
+  return isTelePatient(p) && !p.rnNotified;
 }
 function needsAttention(p){
-  if(isTelePatient(p) && !p.rnNotified) return true;
-  if(batteryOverdue(p)) return true;
-  return false;
+  return batteryOverdue(p);
 }
 
 function renderSidebar(){
   const list = document.getElementById("patientList");
   const filter = document.getElementById("roomFilter").value.trim();
   const sorted = getSortedPatientNames();
-
   list.innerHTML = "";
 
   const filtered = sorted.filter(name=>{
     const p = patients[name] || {};
-    if(!filter) return true;
-    return String(p.room||"").includes(filter);
+    return !filter ? true : String(p.room||"").includes(filter);
   });
 
   if(filtered.length === 0){
@@ -855,16 +831,23 @@ function renderSidebar(){
     const isActive = (name === currentPatient);
     const logCount = (p.logs || []).length;
 
+    const rnFlash = needsRNFlash(p);
     const attn = needsAttention(p);
+
     const flags = [];
-    if(isTelePatient(p) && !p.rnNotified) flags.push("RN!");
+    if(rnFlash) flags.push("RN!");
     if(batteryOverdue(p)) flags.push("BAT");
 
     const rnLine = p.primaryRN ? ` • RN: ${p.primaryRN}` : "";
 
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "patientItem" + (isActive ? " active" : "") + (attn ? " attention" : "");
+    item.className =
+      "patientItem" +
+      (isActive ? " active" : "") +
+      (rnFlash ? " flash-until-rn" : "") +
+      (!rnFlash && attn ? " attention" : "");
+
     item.onclick = () => {
       currentPatient = name;
       document.getElementById("patientSelect").value = name;
@@ -883,14 +866,11 @@ function renderSidebar(){
   });
 }
 
-/* =========================
-   Patient RN assignment
-========================= */
+/* Patient RN assignment */
 function applyPatientRNToUI(){
   if(!currentPatient || !patients[currentPatient]) return;
   const p = patients[currentPatient];
   const assigned = p.primaryRN || "";
-
   document.getElementById("patientRNSelect").value = rnList.includes(assigned) ? assigned : "";
   document.getElementById("patientRNText").value = rnList.includes(assigned) ? "" : assigned;
 }
@@ -900,10 +880,7 @@ function savePatientRNFromSelect(){
   if(val){
     patients[currentPatient].primaryRN = val;
     document.getElementById("patientRNText").value = "";
-    saveStore();
-    renderSidebar();
-    updateHeaderMeta();
-    toast("Primary RN assigned");
+    saveStore(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
   }
 }
 function savePatientRNFromText(){
@@ -912,16 +889,11 @@ function savePatientRNFromText(){
   if(val){
     patients[currentPatient].primaryRN = val;
     document.getElementById("patientRNSelect").value = "";
-    saveStore();
-    renderSidebar();
-    updateHeaderMeta();
-    toast("Primary RN assigned");
+    saveStore(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
   }
 }
 
-/* =========================
-   Header + patient load
-========================= */
+/* Header + load */
 function updateHeaderMeta(){
   const pill = document.getElementById("pillPatient");
   if(!currentPatient || !patients[currentPatient]){
@@ -954,8 +926,11 @@ function addPatient(){
   patients[name].room = room;
   patients[name].bed = bed;
   patients[name].admission = admission;
-  patients[name].rnNotified = !!patients[name].rnNotified;
   patients[name].primaryRN = chosenRN;
+
+  // Default RN Notified for Tele pts = false (forces flashing until checked)
+  if(isTelePatient(patients[name])) patients[name].rnNotified = false;
+  else patients[name].rnNotified = !!patients[name].rnNotified;
 
   if(!Array.isArray(patients[name].logs)) patients[name].logs = [];
   if(!patients[name].lastTeleBatteryCheckMs) patients[name].lastTeleBatteryCheckMs = 0;
@@ -1008,7 +983,7 @@ function loadPatient(forceShow){
   renderSidebar();
   updateHeaderMeta();
 
-  // Reset optional escalation sections to hidden by default
+  // Hide escalation sections by default
   document.getElementById("careEscalated").checked = false;
   document.getElementById("teleEscalated").checked = false;
   document.getElementById("commEscalated").checked = false;
@@ -1020,9 +995,7 @@ function loadPatient(forceShow){
   saveStore();
 }
 
-/* =========================
-   PER-PATIENT logging only
-========================= */
+/* Per-patient logging only */
 function logToCurrentPatient(type, details){
   if(!currentPatient || !patients[currentPatient]) return;
   const p = patients[currentPatient];
@@ -1057,9 +1030,7 @@ function refreshReview(){
   });
 }
 
-/* =========================
-   Escalation builder (optional)
-========================= */
+/* Escalation suffix */
 function escalationSuffix(enabled, rn, details, notified){
   if(!enabled) return "";
   const who = rn ? rn : "(RN not selected)";
@@ -1068,9 +1039,7 @@ function escalationSuffix(enabled, rn, details, notified){
   return ` | ESCALATED: To ${who} • Details: ${d} • RN Notified: ${n}`;
 }
 
-/* =========================
-   Save/Clear functions
-========================= */
+/* Save/Clear */
 function saveCare(){
   const notes = document.getElementById("careNotes").value.trim();
   if(!requireField(notes, "Care notes are required")) return;
@@ -1089,6 +1058,7 @@ function saveCare(){
   let detail = `${tasks.length ? tasks.join(", ") : "No boxes checked"} — Notes: ${notes}`;
   detail += escalationSuffix(esc, rn, det, notified);
 
+  // If you mark RN notified here, stop flashing too (for tele pts)
   if(notified){
     patients[currentPatient].rnNotified = true;
     document.getElementById("rnNotified").checked = true;
@@ -1118,11 +1088,7 @@ function saveTelemetry(){
 
   const p = patients[currentPatient];
   const batteryChecked = document.getElementById("batteryChecked").checked;
-
-  // If battery checked, store timestamp for "overdue" flashing
-  if(batteryChecked){
-    p.lastTeleBatteryCheckMs = Date.now();
-  }
+  if(batteryChecked) p.lastTeleBatteryCheckMs = Date.now();
 
   const battery = batteryChecked ? "Battery checked" : "Battery NOT checked";
   const rnNotified = document.getElementById("rnNotified").checked ? "RN notified: YES" : "RN notified: NO";
@@ -1142,7 +1108,6 @@ function saveTelemetry(){
 function clearTele(clearNotes=true){
   document.getElementById("batteryChecked").checked = false;
   if(clearNotes) document.getElementById("teleNotes").value = "";
-
   document.getElementById("teleEscalated").checked = false;
   document.getElementById("teleEscDetails").value = "";
   toggleEscalationUI("tele");
@@ -1212,9 +1177,7 @@ function clearCommunication(clearNote=true){
   toggleEscalationUI("comm");
 }
 
-/* =========================
-   Export/Import/Wipe
-========================= */
+/* Export/Import/Wipe */
 function escapeCSV(v){
   const s = String(v ?? "");
   if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
@@ -1300,9 +1263,7 @@ function wipeAll(){
   toast("Wiped");
 }
 
-/* =========================
-   Init
-========================= */
+/* Init */
 function init(){
   checkStorage();
   loadStore();
@@ -1320,10 +1281,8 @@ function init(){
     document.getElementById("mainSection").classList.add("hidden");
   }
 
-  // Periodic re-render so attention flashing updates over time (battery overdue)
-  setInterval(() => {
-    if(Object.keys(patients).length) renderSidebar();
-  }, 60 * 1000);
+  // Re-evaluate reminders periodically (battery overdue)
+  setInterval(() => { if(Object.keys(patients).length) renderSidebar(); }, 60 * 1000);
 
   showTab("care");
 }
