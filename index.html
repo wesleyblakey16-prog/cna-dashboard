@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CNA Dashboard (iPad)</title>
+
+<!-- PWA / iPad install support -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<style>
+  :root{
+    --bg:#f3f4f6; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e5e7eb;
+    --danger:#b91c1c; --dangerBg:#fee2e2; --primary:#2563eb; --primaryBg:#dbeafe;
+    --shadow: 0 6px 18px rgba(15, 23, 42, 0.08); --radius: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+  }
+  .container{ max-width:1100px; margin:0 auto; padding:16px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .appHeader{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(to bottom, rgba(243,244,246,0.98), rgba(243,244,246,0.90));
+    backdrop-filter: blur(8px);
+    padding-top: env(safe-area-inset-top);
+    margin:0 -16px 12px -16px; padding: 12px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .headerRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  h1{ margin:0; font-size:22px; }
+  .muted{ color:var(--muted); font-size:14px; margin:6px 0 0; }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 12px; border-radius:999px; background:var(--card);
+    border:1px solid var(--border);
+  }
+  .card{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px; margin-bottom:14px;
+  }
+  h2,h3{ margin:0 0 12px; font-size:18px; }
+  label{ display:block; font-size:14px; color:var(--muted); margin:10px 0 6px; }
+  input,select,textarea{
+    width:100%; font-size:18px; padding:14px 14px; border-radius:14px;
+    border:1px solid var(--border); outline:none; background:#fff;
+  }
+  textarea{ min-height:96px; resize:vertical; line-height:1.3; }
+  input:focus,select:focus,textarea:focus{
+    border-color:rgba(37,99,235,0.6);
+    box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+  }
+  .grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  @media (min-width:820px){ .grid.cols4{ grid-template-columns:repeat(4,1fr); } }
+  .btnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  button{
+    -webkit-tap-highlight-color:transparent;
+    border:0; border-radius:14px; padding:14px 16px;
+    font-size:17px; font-weight:600; cursor:pointer; min-height:52px;
+  }
+  .btnPrimary{ background:var(--primary); color:#fff; }
+  .btnGhost{ background:#fff; border:1px solid var(--border); color:var(--text); }
+  .btnDanger{ background:var(--danger); color:#fff; }
+
+  .tabBar{
+    position:sticky; top: calc(env(safe-area-inset-top) + 72px);
+    z-index:40; background:rgba(243,244,246,0.95); backdrop-filter: blur(8px);
+    margin:0 -16px 12px -16px; padding:10px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .tabs{ display:flex; gap:10px; overflow-x:auto; padding-bottom:2px; }
+  .tabBtn{
+    flex:0 0 auto; padding:12px 14px; border-radius:999px;
+    border:1px solid var(--border); background:#fff; font-size:16px; min-height:44px;
+  }
+  .tabBtn.active{ background:var(--primaryBg); border-color:rgba(37,99,235,0.35); color:#1d4ed8; }
+  .hidden{ display:none; }
+
+  .rnBanner{
+    position:sticky; top: calc(env(safe-area-inset-top) + 72px + 64px);
+    z-index:60; border-radius:14px; padding:12px 14px;
+    background:var(--dangerBg); border:1px solid rgba(185,28,28,0.25);
+    color:var(--danger); font-weight:800; text-align:center;
+    box-shadow:0 10px 25px rgba(185,28,28,0.12);
+    margin-bottom:12px; user-select:none;
+  }
+  .rnBanner small{ display:block; font-weight:600; margin-top:4px; color:rgba(185,28,28,0.85); }
+
+  .warnBanner{
+    background:#fff7ed; border:1px solid #fdba74; color:#9a3412;
+    padding:12px 14px; border-radius:14px; margin-top:10px;
+    font-weight:700;
+  }
+
+  .toggleList{ display:grid; gap:10px; }
+  .toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 14px; border-radius:14px; border:1px solid var(--border);
+    background:#fff; min-height:56px;
+  }
+  .toggle .left{ display:flex; flex-direction:column; gap:2px; }
+  .toggle .left strong{ font-size:16px; }
+  .toggle .left span{ font-size:13px; color:var(--muted); }
+  .toggle input[type="checkbox"]{ width:26px; height:26px; accent-color:var(--primary); }
+
+  table{ width:100%; border-collapse:collapse; border-radius:14px; overflow:hidden; border:1px solid var(--border); }
+  th,td{ padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ text-align:left; font-size:13px; color:var(--muted); background:#f8fafc; }
+  td{ font-size:14px; }
+  tr:last-child td{ border-bottom:0; }
+
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index:1000; background:#111827; color:#fff;
+    padding:12px 14px; border-radius:999px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    font-size:14px; display:none;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="appHeader">
+    <div class="headerRow">
+      <div>
+        <h1>CNA Task Dashboard</h1>
+        <p class="muted">iPad-friendly • offline • patient-based logs</p>
+      </div>
+      <div class="pill">
+        <span>👤</span>
+        <span id="pillPatient">No patient selected</span>
+      </div>
+    </div>
+    <div id="storageWarning" class="warnBanner hidden">
+      Storage is blocked in this viewer. Use Safari / installed app for saving to persist.
+      You can still use the app right now, but data may not persist after closing.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Add Patient</h2>
+    <div class="grid cols4">
+      <div>
+        <label>Patient Name</label>
+        <input id="patientName" placeholder="e.g., John D." />
+      </div>
+      <div>
+        <label>Room #</label>
+        <input id="room" placeholder="e.g., 214" inputmode="numeric" />
+      </div>
+      <div>
+        <label>Bed #</label>
+        <input id="bed" placeholder="e.g., A" />
+      </div>
+      <div>
+        <label>Admission Type</label>
+        <select id="admissionType">
+          <option value="">Select admission type</option>
+          <option>Inpatient w/ Telemetry</option>
+          <option>Inpatient (No Tele)</option>
+          <option>Swing Bed</option>
+          <option>Surgical OPIB</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btnRow">
+      <button type="button" class="btnPrimary" onclick="addPatient()">Add Patient</button>
+      <button type="button" class="btnGhost" onclick="exportJSON()">Export (JSON)</button>
+      <button type="button" class="btnGhost" onclick="importJSON()">Import (JSON)</button>
+      <button type="button" class="btnDanger" onclick="wipeAll()">Wipe All Data</button>
+    </div>
+
+    <p class="muted" style="margin-top:10px;">
+      Tip: After you publish on GitHub Pages, open it in Safari → Share → Add to Home Screen (offline app).
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Patient Selection</h2>
+    <label>Pick a patient</label>
+    <select id="patientSelect" onchange="loadPatient()"></select>
+    <p class="muted" id="patientMeta">—</p>
+  </div>
+
+  <div id="mainSection" class="hidden">
+
+    <div class="tabBar">
+      <div class="tabs">
+        <button type="button" class="tabBtn active" id="tabBtn-care" onclick="showTab('care')">Cares</button>
+        <button type="button" class="tabBtn" id="tabBtn-tele" onclick="showTab('tele')">Telemetry</button>
+        <button type="button" class="tabBtn" id="tabBtn-activity" onclick="showTab('activity')">Activity</button>
+        <button type="button" class="tabBtn" id="tabBtn-oral" onclick="showTab('oral')">Oral Care</button>
+        <button type="button" class="tabBtn" id="tabBtn-review" onclick="showTab('review')">Review</button>
+      </div>
+    </div>
+
+    <div id="rnBanner" class="rnBanner hidden">
+      ⚠️ PRIMARY RN NOT NOTIFIED
+      <small>Tap “Primary RN notified” in Telemetry after you notify them.</small>
+    </div>
+
+    <div id="care" class="card">
+      <h3>Patient Cares</h3>
+      <div class="toggleList">
+        <div class="toggle">
+          <div class="left"><strong>Wash face / hands</strong><span>ADLs</span></div>
+          <input type="checkbox" id="washFace" />
+        </div>
+        <div class="toggle">
+          <div class="left"><strong>Toileting</strong><span>Assist to bathroom / bedpan</span></div>
+          <input type="checkbox" id="toileting" />
+        </div>
+        <div class="toggle">
+          <div class="left"><strong>Ambulation</strong><span>Walking / mobility</span></div>
+          <input type="checkbox" id="ambulation" />
+        </div>
+        <div class="toggle">
+          <div class="left"><strong>Primofit / Purewick</strong><span>Incontinence support</span></div>
+          <input type="checkbox" id="primofit" />
+        </div>
+      </div>
+
+      <label>Notes (required)</label>
+      <textarea id="careNotes" placeholder="What did you do? Any issues? (Required)"></textarea>
+
+      <div class="btnRow">
+        <button type="button" class="btnPrimary" onclick="saveCare()">Save Care</button>
+        <button type="button" class="btnGhost" onclick="clearCare()">Clear</button>
+      </div>
+    </div>
+
+    <div id="tele" class="card hidden">
+      <h3>Telemetry</h3>
+
+      <div class="toggleList">
+        <div class="toggle">
+          <div class="left"><strong>Telemetry battery checked</strong><span>Check every couple hours</span></div>
+          <input type="checkbox" id="batteryChecked" />
+        </div>
+      </div>
+
+      <label>Rhythm / alarm description (required)</label>
+      <textarea id="teleNotes" placeholder="Describe abnormal rhythm / alarms (Required)"></textarea>
+
+      <div class="toggle" style="margin-top:10px;">
+        <div class="left"><strong>Primary RN notified</strong><span>(Optional checkbox) — banner nags until checked</span></div>
+        <input type="checkbox" id="rnNotified" onchange="handleRNNotified()" />
+      </div>
+
+      <div class="btnRow">
+        <button type="button" class="btnPrimary" onclick="saveTelemetry()">Save Telemetry</button>
+        <button type="button" class="btnGhost" onclick="clearTele()">Clear</button>
+      </div>
+    </div>
+
+    <div id="activity" class="card hidden">
+      <h3>Activity / Rounding</h3>
+      <div class="toggleList">
+        <div class="toggle"><div class="left"><strong>Sleeping</strong><span>Resting</span></div><input type="checkbox" id="sleeping" /></div>
+        <div class="toggle"><div class="left"><strong>Awake</strong><span>Alert</span></div><input type="checkbox" id="awake" /></div>
+        <div class="toggle"><div class="left"><strong>Visiting with family</strong><span>Family at bedside</span></div><input type="checkbox" id="family" /></div>
+        <div class="toggle"><div class="left"><strong>Toileting</strong><span>Needs / used bathroom</span></div><input type="checkbox" id="bathroom" /></div>
+      </div>
+
+      <label>Notes (optional)</label>
+      <textarea id="activityNotes" placeholder="Optional rounding notes"></textarea>
+
+      <div class="btnRow">
+        <button type="button" class="btnPrimary" onclick="saveActivity()">Save Activity</button>
+        <button type="button" class="btnGhost" onclick="clearActivity()">Clear</button>
+      </div>
+    </div>
+
+    <div id="oral" class="card hidden">
+      <h3>Oral Care</h3>
+      <label>Status (required)</label>
+      <select id="oralStatus">
+        <option value="">Select</option>
+        <option>Completed</option>
+        <option>Refused</option>
+      </select>
+
+      <label>Notes (optional)</label>
+      <textarea id="oralNotes" placeholder="Optional notes"></textarea>
+
+      <div class="btnRow">
+        <button type="button" class="btnPrimary" onclick="saveOral()">Save Oral Care</button>
+        <button type="button" class="btnGhost" onclick="clearOral()">Clear</button>
+      </div>
+    </div>
+
+    <div id="review" class="card hidden">
+      <h3>Patient Documentation</h3>
+      <div class="btnRow" style="margin-top:-2px; margin-bottom:10px;">
+        <button type="button" class="btnGhost" onclick="exportPatientCSV()">Export Patient CSV</button>
+        <button type="button" class="btnDanger" onclick="clearPatientLogs()">Clear This Patient Logs</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th style="width:120px;">Type</th><th>Details</th><th style="width:160px;">Time</th></tr>
+        </thead>
+        <tbody id="reviewTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================
+   Storage wrapper (offline safe)
+========================= */
+const STORAGE_KEY = "cna_dashboard_ipad_v2";
+let patients = {};
+let currentPatient = null;
+
+// If localStorage is blocked, we still let the app work in-memory.
+let storageOK = false;
+
+function checkStorage(){
+  try{
+    const testKey = "__cna_test__";
+    localStorage.setItem(testKey, "1");
+    localStorage.removeItem(testKey);
+    storageOK = true;
+  }catch(e){
+    storageOK = false;
+  }
+  document.getElementById("storageWarning").classList.toggle("hidden", storageOK);
+}
+
+function saveStore(){
+  if(!storageOK) return; // memory-only mode
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ patients, currentPatient }));
+  }catch(e){
+    storageOK = false;
+    document.getElementById("storageWarning").classList.remove("hidden");
+  }
+}
+
+function loadStore(){
+  if(!storageOK) return;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    patients = parsed.patients || {};
+    currentPatient = parsed.currentPatient || null;
+  }catch(e){
+    // ignore
+  }
+}
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=> t.style.display="none", 1600);
+}
+
+function requireField(val, msg){
+  if(!val || String(val).trim()===""){
+    alert(msg);
+    return false;
+  }
+  return true;
+}
+
+function nowStamp(){
+  const d = new Date();
+  return d.toLocaleString([], { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+/* =========================
+   Tabs
+========================= */
+function setActiveTab(tab){
+  document.querySelectorAll(".tabBtn").forEach(b=>b.classList.remove("active"));
+  const btn = document.getElementById("tabBtn-" + tab);
+  if(btn) btn.classList.add("active");
+}
+
+function showTab(tab){
+  ["care","tele","activity","oral","review"].forEach(id => {
+    document.getElementById(id).classList.add("hidden");
+  });
+  document.getElementById(tab).classList.remove("hidden");
+  setActiveTab(tab);
+}
+
+/* =========================
+   RN banner
+========================= */
+let rnInterval = null;
+let rnFlash = false;
+
+function startRNWarning(){
+  const banner = document.getElementById("rnBanner");
+  banner.classList.remove("hidden");
+
+  stopRNWarning();
+  banner.classList.remove("hidden");
+
+  rnInterval = setInterval(()=>{
+    rnFlash = !rnFlash;
+    banner.style.transform = rnFlash ? "scale(1.01)" : "scale(1.0)";
+  }, 2 * 60 * 1000);
+
+  banner.style.transform = "scale(1.01)";
+  setTimeout(()=> banner.style.transform="scale(1.0)", 250);
+}
+
+function stopRNWarning(){
+  const banner = document.getElementById("rnBanner");
+  banner.classList.add("hidden");
+  banner.style.transform = "scale(1.0)";
+  if(rnInterval) clearInterval(rnInterval);
+  rnInterval = null;
+}
+
+function handleRNNotified(){
+  if(!currentPatient || !patients[currentPatient]) return;
+  patients[currentPatient].rnNotified = document.getElementById("rnNotified").checked;
+
+  const admission = patients[currentPatient].admission || "";
+  const isTele = admission.includes("Tele");
+  if(isTele && !patients[currentPatient].rnNotified) startRNWarning();
+  else stopRNWarning();
+
+  saveStore();
+}
+
+/* =========================
+   Patients
+========================= */
+function rebuildPatientSelect(){
+  const sel = document.getElementById("patientSelect");
+  sel.innerHTML = `<option value="">Select a patient</option>`;
+  Object.keys(patients).sort().forEach(name=>{
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+
+  if(currentPatient && patients[currentPatient]){
+    sel.value = currentPatient;
+  }
+}
+
+function updateHeaderMeta(){
+  const pill = document.getElementById("pillPatient");
+  const meta = document.getElementById("patientMeta");
+
+  if(!currentPatient || !patients[currentPatient]){
+    pill.textContent = "No patient selected";
+    meta.textContent = "—";
+    return;
+  }
+  const p = patients[currentPatient];
+  pill.textContent = currentPatient;
+  meta.textContent = `Room/Bed: ${p.room} / ${p.bed} • Admission: ${p.admission} • Logs: ${(p.logs||[]).length}`;
+}
+
+function addPatient(){
+  const name = document.getElementById("patientName").value.trim();
+  const room = document.getElementById("room").value.trim();
+  const bed  = document.getElementById("bed").value.trim();
+  const admission = document.getElementById("admissionType").value;
+
+  if(!requireField(name, "Patient name is required")) return;
+  if(!requireField(room, "Room # is required")) return;
+  if(!requireField(bed, "Bed # is required")) return;
+  if(!requireField(admission, "Admission type is required")) return;
+
+  patients[name] = patients[name] || { logs: [] };
+  patients[name].room = room;
+  patients[name].bed = bed;
+  patients[name].admission = admission;
+  patients[name].logs = patients[name].logs || [];
+  patients[name].rnNotified = !!patients[name].rnNotified;
+
+  currentPatient = name;
+
+  document.getElementById("patientName").value = "";
+  document.getElementById("room").value = "";
+  document.getElementById("bed").value = "";
+  document.getElementById("admissionType").value = "";
+
+  rebuildPatientSelect();
+  loadPatient(true);
+  saveStore();
+  toast("Patient saved");
+}
+
+function loadPatient(force=false){
+  const selVal = document.getElementById("patientSelect").value;
+  if(selVal) currentPatient = selVal;
+
+  if(!currentPatient || !patients[currentPatient]){
+    document.getElementById("mainSection").classList.add("hidden");
+    stopRNWarning();
+    updateHeaderMeta();
+    saveStore();
+    return;
+  }
+
+  document.getElementById("mainSection").classList.remove("hidden");
+  updateHeaderMeta();
+
+  const admission = patients[currentPatient].admission || "";
+  const isTele = admission.includes("Tele");
+  document.getElementById("rnNotified").checked = !!patients[currentPatient].rnNotified;
+
+  if(isTele && !patients[currentPatient].rnNotified) startRNWarning();
+  else stopRNWarning();
+
+  refreshReview();
+
+  if(force) showTab("care");
+  saveStore();
+}
+
+/* =========================
+   Logs
+========================= */
+function escapeHtml(str){
+  return String(str || "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+function log(type, details){
+  if(!currentPatient || !patients[currentPatient]) return;
+  patients[currentPatient].logs.push({ type, details, time: nowStamp() });
+  saveStore();
+  refreshReview();
+  updateHeaderMeta();
+  toast("Saved");
+}
+
+function refreshReview(){
+  const tbody = document.getElementById("reviewTable");
+  tbody.innerHTML = "";
+
+  const logs = (patients[currentPatient].logs || []);
+  if(logs.length === 0){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">No documentation yet.</td></tr>`;
+    return;
+  }
+
+  [...logs].reverse().forEach(l=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(l.type)}</strong></td>
+      <td>${escapeHtml(l.details)}</td>
+      <td>${escapeHtml(l.time)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* =========================
+   Tab save/clear
+========================= */
+function saveCare(){
+  const notes = document.getElementById("careNotes").value.trim();
+  if(!requireField(notes, "Care notes are required")) return;
+
+  const tasks = [];
+  if(document.getElementById("washFace").checked) tasks.push("Washed face/hands");
+  if(document.getElementById("toileting").checked) tasks.push("Toileting");
+  if(document.getElementById("ambulation").checked) tasks.push("Ambulated");
+  if(document.getElementById("primofit").checked) tasks.push("Primofit/Purewick");
+
+  log("Care", `${tasks.length ? tasks.join(", ") : "No boxes checked"} — Notes: ${notes}`);
+  clearCare(false);
+}
+
+function clearCare(clearNotes=true){
+  document.getElementById("washFace").checked = false;
+  document.getElementById("toileting").checked = false;
+  document.getElementById("ambulation").checked = false;
+  document.getElementById("primofit").checked = false;
+  if(clearNotes) document.getElementById("careNotes").value = "";
+}
+
+function saveTelemetry(){
+  const notes = document.getElementById("teleNotes").value.trim();
+  if(!requireField(notes, "Telemetry description is required")) return;
+
+  const battery = document.getElementById("batteryChecked").checked ? "Battery checked" : "Battery not checked";
+  const rn = document.getElementById("rnNotified").checked ? "RN notified: YES" : "RN notified: NO";
+  handleRNNotified();
+  log("Telemetry", `${battery} | ${rn} — ${notes}`);
+  clearTele(false);
+}
+
+function clearTele(clearNotes=true){
+  document.getElementById("batteryChecked").checked = false;
+  if(clearNotes) document.getElementById("teleNotes").value = "";
+}
+
+function saveActivity(){
+  const tasks = [];
+  if(document.getElementById("sleeping").checked) tasks.push("Sleeping");
+  if(document.getElementById("awake").checked) tasks.push("Awake");
+  if(document.getElementById("family").checked) tasks.push("Visiting with family");
+  if(document.getElementById("bathroom").checked) tasks.push("Toileting");
+
+  const notes = document.getElementById("activityNotes").value.trim();
+  log("Activity", `${tasks.length ? tasks.join(", ") : "No boxes checked"}${notes ? " — Notes: " + notes : ""}`);
+  clearActivity(false);
+}
+
+function clearActivity(clearNotes=true){
+  document.getElementById("sleeping").checked = false;
+  document.getElementById("awake").checked = false;
+  document.getElementById("family").checked = false;
+  document.getElementById("bathroom").checked = false;
+  if(clearNotes) document.getElementById("activityNotes").value = "";
+}
+
+function saveOral(){
+  const status = document.getElementById("oralStatus").value;
+  if(!requireField(status, "Oral care status is required")) return;
+
+  const notes = document.getElementById("oralNotes").value.trim();
+  log("Oral Care", `${status}${notes ? " — Notes: " + notes : ""}`);
+  clearOral(false);
+}
+
+function clearOral(clearNotes=true){
+  document.getElementById("oralStatus").value = "";
+  if(clearNotes) document.getElementById("oralNotes").value = "";
+}
+
+/* =========================
+   Export/Import/Wipe
+========================= */
+function escapeCSV(v){
+  const s = String(v ?? "");
+  if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+  return s;
+}
+function safeFileName(name){
+  return String(name).replace(/[^a-z0-9_-]+/gi, "_").slice(0,60);
+}
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], { type: mime || "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function exportPatientCSV(){
+  if(!currentPatient || !patients[currentPatient]) return alert("Select a patient first.");
+  const p = patients[currentPatient];
+  const rows = [["Patient","Room","Bed","Admission","Type","Details","Time"]];
+  (p.logs||[]).forEach(l=>{
+    rows.push([currentPatient,p.room,p.bed,p.admission,l.type,l.details,l.time]);
+  });
+  const csv = rows.map(r => r.map(escapeCSV).join(",")).join("\n");
+  downloadFile(`${safeFileName(currentPatient)}_logs.csv`, csv, "text/csv;charset=utf-8");
+}
+function exportJSON(){
+  const payload = JSON.stringify({ patients, currentPatient }, null, 2);
+  downloadFile("cna_dashboard_backup.json", payload, "application/json");
+}
+function importJSON(){
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = "application/json";
+  inp.onchange = () => {
+    const file = inp.files && inp.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        patients = parsed.patients || {};
+        currentPatient = parsed.currentPatient || null;
+        saveStore();
+        rebuildPatientSelect();
+        loadPatient(true);
+        toast("Imported");
+      }catch(e){
+        alert("Import failed: invalid JSON.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+function clearPatientLogs(){
+  if(!currentPatient) return;
+  if(!confirm(`Clear ALL logs for ${currentPatient}?`)) return;
+  patients[currentPatient].logs = [];
+  saveStore();
+  refreshReview();
+  updateHeaderMeta();
+  toast("Cleared logs");
+}
+function wipeAll(){
+  if(!confirm("Wipe ALL patients and logs? This cannot be undone.")) return;
+  patients = {};
+  currentPatient = null;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  rebuildPatientSelect();
+  loadPatient(true);
+  toast("Wiped");
+}
+
+/* =========================
+   Init
+========================= */
+function init(){
+  checkStorage();
+  loadStore();
+  rebuildPatientSelect();
+
+  if(currentPatient && patients[currentPatient]){
+    document.getElementById("patientSelect").value = currentPatient;
+    loadPatient(true);
+  } else {
+    updateHeaderMeta();
+  }
+  showTab("care");
+}
+init();
+</script>
+
+<!-- Service worker registration for offline/PWA -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(console.error);
+    });
+  }
+</script>
+</body>
+</html>
