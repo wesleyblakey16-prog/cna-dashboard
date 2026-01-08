@@ -1,174 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>CNA Dashboard (iPad)</title>
+const CACHE_NAME = "cna-dashboard-v3";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./sw.js",
+  "./icon-192.png",
+  "./icon-512.png"
+];
 
-<!-- PWA / iPad install support -->
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#2563eb">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
 
-<style>
-  :root{
-    --bg:#f3f4f6; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e5e7eb;
-    --danger:#b91c1c; --dangerBg:#fee2e2; --primary:#2563eb; --primaryBg:#dbeafe;
-    --shadow: 0 6px 18px rgba(15, 23, 42, 0.08); --radius: 16px;
-  }
-  *{ box-sizing:border-box; }
-  html,body{ height:100%; }
-  body{
-    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    background:var(--bg); color:var(--text);
-  }
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
+    )
+  );
+  self.clients.claim();
+});
 
-  .appHeader{
-    position:sticky; top:0; z-index:100;
-    background:linear-gradient(to bottom, rgba(243,244,246,0.98), rgba(243,244,246,0.90));
-    backdrop-filter: blur(8px);
-    padding-top: env(safe-area-inset-top);
-    padding-left:16px; padding-right:16px; padding-bottom:12px; padding-top:12px;
-    border-bottom:1px solid var(--border);
-  }
-  .headerRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1200px; margin:0 auto; }
-  h1{ margin:0; font-size:22px; }
-  .muted{ color:var(--muted); font-size:14px; margin:6px 0 0; }
-  .pill{
-    display:inline-flex; align-items:center; gap:8px;
-    padding:10px 12px; border-radius:999px; background:var(--card);
-    border:1px solid var(--border);
-  }
-  .warnBanner{
-    max-width:1200px; margin:10px auto 0;
-    background:#fff7ed; border:1px solid #fdba74; color:#9a3412;
-    padding:12px 14px; border-radius:14px; font-weight:700;
-  }
-  .hidden{ display:none; }
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
 
-  .shell{
-    max-width:1200px;
-    margin: 0 auto;
-    padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
-    display: grid;
-    gap: 14px;
-    grid-template-columns: 1fr;
-  }
-  @media (min-width: 820px){
-    .shell{
-      grid-template-columns: 340px 1fr;
-      align-items: start;
-    }
-  }
-
-  .card{
-    background:var(--card); border:1px solid var(--border);
-    border-radius:var(--radius); box-shadow:var(--shadow);
-    padding:16px;
-  }
-  h2,h3{ margin:0 0 12px; font-size:18px; }
-
-  label{ display:block; font-size:14px; color:var(--muted); margin:10px 0 6px; }
-  input,select,textarea{
-    width:100%; font-size:18px; padding:14px 14px; border-radius:14px;
-    border:1px solid var(--border); outline:none; background:#fff;
-  }
-  textarea{ min-height:96px; resize:vertical; line-height:1.3; }
-  input:focus,select:focus,textarea:focus{
-    border-color:rgba(37,99,235,0.6);
-    box-shadow:0 0 0 4px rgba(37,99,235,0.12);
-  }
-
-  .grid{ display:grid; grid-template-columns:1fr; gap:12px; }
-  @media (min-width:820px){
-    .grid.cols2{ grid-template-columns:repeat(2,1fr); }
-    .grid.cols4{ grid-template-columns:repeat(4,1fr); }
-  }
-
-  .btnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-  button{
-    -webkit-tap-highlight-color:transparent;
-    border:0; border-radius:14px; padding:14px 16px;
-    font-size:17px; font-weight:600; cursor:pointer; min-height:52px;
-  }
-  .btnPrimary{ background:var(--primary); color:#fff; }
-  .btnGhost{ background:#fff; border:1px solid var(--border); color:var(--text); }
-  .btnDanger{ background:var(--danger); color:#fff; }
-
-  .sidebar{
-    position: sticky;
-    top: calc(env(safe-area-inset-top) + 78px);
-    z-index: 10;
-  }
-  .patientList{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    max-height: calc(100vh - 180px);
-    overflow:auto;
-    padding-right: 4px;
-  }
-  .patientItem{
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:12px 12px;
-    background:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    min-height:56px;
-  }
-  .patientItem .left{
-    display:flex;
-    flex-direction:column;
-    gap:2px;
-    min-width: 0;
-  }
-  .patientItem .left strong{
-    font-size:16px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .patientItem .left span{
-    font-size:13px;
-    color:var(--muted);
-  }
-  .patientItem .badge{
-    font-size:12px;
-    padding:6px 10px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    background:#f8fafc;
-    color:var(--muted);
-    flex: 0 0 auto;
-  }
-  .patientItem.active{
-    background: var(--primaryBg);
-    border-color: rgba(37,99,235,0.35);
-  }
-  .patientItem.active .badge{
-    border-color: rgba(37,99,235,0.35);
-    color: #1d4ed8;
-    background: #eef2ff;
-  }
-
-  .tabBar{
-    position:sticky;
-    top: calc(env(safe-area-inset-top) + 78px);
-    z-index:50;
-    background:rgba(243,244,246,0.95);
-    backdrop-filter: blur(8px);
-    padding:10px 0;
-    margin: -6px 0 12px;
-    border-bottom:1px solid var(--border);
-  }
-  .tabs{ display:flex; gap:10px; overflow-x:auto; padding-bottom:2px; }
-  .tabBtn{
-    flex:0 0 auto; padding:12px 14px; border-radius:999px;
-    border:1px solid var(--border); background:#fff; font-size:16px; min-height:44px;
-  }
-  .tabBtn.ac
+      return fetch(event.request)
+        .then((resp) => {
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return resp;
+        })
+        .catch(() => caches.match("./index.html"));
+    })
+  );
+});
