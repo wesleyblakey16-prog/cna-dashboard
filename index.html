@@ -1,41 +1,1214 @@
-const CACHE_NAME = "cna-dashboard-v3";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./sw.js",
-  "./icon-192.png",
-  "./icon-512.png"
-];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CNA Dashboard (iPad)</title>
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
-});
+<!-- PWA / iPad install support -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
-    )
-  );
-  self.clients.claim();
-});
+<style>
+  :root{
+    --bg:#f3f4f6; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e5e7eb;
+    --danger:#b91c1c; --dangerBg:#fee2e2; --primary:#2563eb; --primaryBg:#dbeafe;
+    --shadow: 0 6px 18px rgba(15, 23, 42, 0.08); --radius: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+  }
 
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
+  .appHeader{
+    position:sticky; top:0; z-index:100;
+    background:linear-gradient(to bottom, rgba(243,244,246,0.98), rgba(243,244,246,0.90));
+    backdrop-filter: blur(8px);
+    padding-top: env(safe-area-inset-top);
+    padding-left:16px; padding-right:16px; padding-bottom:12px; padding-top:12px;
+    border-bottom:1px solid var(--border);
+  }
+  .headerRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1200px; margin:0 auto; }
+  h1{ margin:0; font-size:22px; }
+  .muted{ color:var(--muted); font-size:14px; margin:6px 0 0; }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 12px; border-radius:999px; background:var(--card);
+    border:1px solid var(--border);
+  }
+  .warnBanner{
+    max-width:1200px; margin:10px auto 0;
+    background:#fff7ed; border:1px solid #fdba74; color:#9a3412;
+    padding:12px 14px; border-radius:14px; font-weight:700;
+  }
+  .hidden{ display:none; }
 
-      return fetch(event.request)
-        .then((resp) => {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return resp;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
-  );
-});
+  .shell{
+    max-width:1200px;
+    margin: 0 auto;
+    padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 820px){
+    .shell{
+      grid-template-columns: 340px 1fr;
+      align-items: start;
+    }
+  }
+
+  .card{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px;
+  }
+  h2,h3{ margin:0 0 12px; font-size:18px; }
+
+  label{ display:block; font-size:14px; color:var(--muted); margin:10px 0 6px; }
+  input,select,textarea{
+    width:100%; font-size:18px; padding:14px 14px; border-radius:14px;
+    border:1px solid var(--border); outline:none; background:#fff;
+  }
+  textarea{ min-height:96px; resize:vertical; line-height:1.3; }
+  input:focus,select:focus,textarea:focus{
+    border-color:rgba(37,99,235,0.6);
+    box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+  }
+
+  .grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  @media (min-width:820px){
+    .grid.cols2{ grid-template-columns:repeat(2,1fr); }
+    .grid.cols4{ grid-template-columns:repeat(4,1fr); }
+  }
+
+  .btnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  button{
+    -webkit-tap-highlight-color:transparent;
+    border:0; border-radius:14px; padding:14px 16px;
+    font-size:17px; font-weight:600; cursor:pointer; min-height:52px;
+  }
+  .btnPrimary{ background:var(--primary); color:#fff; }
+  .btnGhost{ background:#fff; border:1px solid var(--border); color:var(--text); }
+  .btnDanger{ background:var(--danger); color:#fff; }
+
+  .sidebar{
+    position: sticky;
+    top: calc(env(safe-area-inset-top) + 78px);
+    z-index: 10;
+  }
+  .patientList{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    max-height: calc(100vh - 180px);
+    overflow:auto;
+    padding-right: 4px;
+  }
+  .patientItem{
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 12px;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    min-height:56px;
+  }
+  .patientItem .left{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width: 0;
+  }
+  .patientItem .left strong{
+    font-size:16px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .patientItem .left span{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .patientItem .badge{
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:#f8fafc;
+    color:var(--muted);
+    flex: 0 0 auto;
+  }
+  .patientItem.active{
+    background: var(--primaryBg);
+    border-color: rgba(37,99,235,0.35);
+  }
+  .patientItem.active .badge{
+    border-color: rgba(37,99,235,0.35);
+    color: #1d4ed8;
+    background: #eef2ff;
+  }
+
+  .tabBar{
+    position:sticky;
+    top: calc(env(safe-area-inset-top) + 78px);
+    z-index:50;
+    background:rgba(243,244,246,0.95);
+    backdrop-filter: blur(8px);
+    padding:10px 0;
+    margin: -6px 0 12px;
+    border-bottom:1px solid var(--border);
+  }
+  .tabs{ display:flex; gap:10px; overflow-x:auto; padding-bottom:2px; }
+  .tabBtn{
+    flex:0 0 auto; padding:12px 14px; border-radius:999px;
+    border:1px solid var(--border); background:#fff; font-size:16px; min-height:44px;
+  }
+  .tabBtn.active{ background:var(--primaryBg); border-color:rgba(37,99,235,0.35); color:#1d4ed8; }
+
+  .rnBanner{
+    position:sticky; top: calc(env(safe-area-inset-top) + 78px + 64px);
+    z-index:60; border-radius:14px; padding:12px 14px;
+    background:var(--dangerBg); border:1px solid rgba(185,28,28,0.25);
+    color:var(--danger); font-weight:800; text-align:center;
+    box-shadow:0 10px 25px rgba(185,28,28,0.12);
+    margin-bottom:12px; user-select:none;
+  }
+  .rnBanner small{ display:block; font-weight:600; margin-top:4px; color:rgba(185,28,28,0.85); }
+
+  .toggleList{ display:grid; gap:10px; }
+  .toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 14px; border-radius:14px; border:1px solid var(--border);
+    background:#fff; min-height:56px;
+  }
+  .toggle .left{ display:flex; flex-direction:column; gap:2px; }
+  .toggle .left strong{ font-size:16px; }
+  .toggle .left span{ font-size:13px; color:var(--muted); }
+  .toggle input[type="checkbox"]{ width:26px; height:26px; accent-color:var(--primary); }
+
+  .divider{ height:1px; background:var(--border); margin:12px 0; }
+
+  table{ width:100%; border-collapse:collapse; border-radius:14px; overflow:hidden; border:1px solid var(--border); }
+  th,td{ padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ text-align:left; font-size:13px; color:var(--muted); background:#f8fafc; }
+  td{ font-size:14px; }
+  tr:last-child td{ border-bottom:0; }
+
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index:1000; background:#111827; color:#fff;
+    padding:12px 14px; border-radius:999px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    font-size:14px; display:none;
+  }
+</style>
+</head>
+
+<body>
+  <div class="appHeader">
+    <div class="headerRow">
+      <div>
+        <h1>CNA Task Dashboard</h1>
+        <p class="muted">iPad-friendly • offline • per-patient logs • RN assignment + escalation</p>
+      </div>
+      <div class="pill">
+        <span>👤</span>
+        <span id="pillPatient">No patient selected</span>
+      </div>
+    </div>
+
+    <div id="storageWarning" class="warnBanner hidden">
+      Storage is blocked in this viewer. Use Safari / installed app for saving to persist.
+      You can still use the app right now, but data may not persist after closing.
+    </div>
+  </div>
+
+  <div class="shell">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+      <div class="card">
+        <h2>Patients</h2>
+
+        <label>Filter by Room #</label>
+        <input id="roomFilter" placeholder="e.g., 214" inputmode="numeric" oninput="renderSidebar()" />
+
+        <label>Quick select</label>
+        <select id="patientSelect" onchange="loadPatient(true)"></select>
+
+        <div class="btnRow" style="margin-top:10px;">
+          <button type="button" class="btnGhost" onclick="sortModeToggle()">Sort: <span id="sortModeLabel">Room</span></button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="patientList" id="patientList"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3>Unit RN List</h3>
+        <label>Add RN to list</label>
+        <input id="rnAddName" placeholder="e.g., Smith, RN" />
+        <div class="btnRow" style="margin-top:10px;">
+          <button type="button" class="btnPrimary" onclick="addRN()">Add RN</button>
+          <button type="button" class="btnDanger" onclick="clearRNList()">Clear RN List</button>
+        </div>
+
+        <p class="muted" style="margin-top:10px;">
+          This RN list is used for patient assignment + escalation pick-lists.
+        </p>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div>
+      <!-- Add Patient -->
+      <div class="card">
+        <h2>Add Patient</h2>
+
+        <div class="grid cols4">
+          <div>
+            <label>Patient Name</label>
+            <input id="patientName" placeholder="e.g., John D." />
+          </div>
+          <div>
+            <label>Room #</label>
+            <input id="room" placeholder="e.g., 214" inputmode="numeric" />
+          </div>
+          <div>
+            <label>Bed #</label>
+            <input id="bed" placeholder="e.g., A" />
+          </div>
+          <div>
+            <label>Admission Type</label>
+            <select id="admissionType">
+              <option value="">Select admission type</option>
+              <option>Inpatient w/ Telemetry</option>
+              <option>Inpatient (No Tele)</option>
+              <option>Swing Bed</option>
+              <option>Surgical OPIB</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid cols2" style="margin-top:10px;">
+          <div>
+            <label>Primary RN (optional)</label>
+            <select id="primaryRNSelect"></select>
+          </div>
+          <div>
+            <label>Or type Primary RN</label>
+            <input id="primaryRNText" placeholder="optional if not in list" />
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button type="button" class="btnPrimary" onclick="addPatient()">Add Patient</button>
+          <button type="button" class="btnGhost" onclick="exportJSON()">Export (JSON)</button>
+          <button type="button" class="btnGhost" onclick="importJSON()">Import (JSON)</button>
+          <button type="button" class="btnDanger" onclick="wipeAll()">Wipe All Data</button>
+        </div>
+
+        <p class="muted" style="margin-top:10px;">
+          Tip: Open GitHub Pages in Safari → Share → Add to Home Screen for offline app use.
+        </p>
+      </div>
+
+      <div id="mainSection" class="hidden">
+
+        <div class="card" style="margin-bottom:14px;">
+          <h3>Patient Info</h3>
+          <div class="grid cols2">
+            <div>
+              <label>Assigned Primary RN</label>
+              <select id="patientRNSelect" onchange="savePatientRNFromSelect()"></select>
+            </div>
+            <div>
+              <label>Or type Primary RN</label>
+              <input id="patientRNText" placeholder="optional override" onblur="savePatientRNFromText()" />
+            </div>
+          </div>
+          <p class="muted" id="patientInfoLine" style="margin-top:10px;">—</p>
+        </div>
+
+        <div class="tabBar">
+          <div class="tabs">
+            <button type="button" class="tabBtn active" id="tabBtn-care" onclick="showTab('care')">Cares</button>
+            <button type="button" class="tabBtn" id="tabBtn-tele" onclick="showTab('tele')">Telemetry</button>
+            <button type="button" class="tabBtn" id="tabBtn-activity" onclick="showTab('activity')">Activity</button>
+            <button type="button" class="tabBtn" id="tabBtn-oral" onclick="showTab('oral')">Oral Care</button>
+            <button type="button" class="tabBtn" id="tabBtn-review" onclick="showTab('review')">Review</button>
+          </div>
+        </div>
+
+        <div id="rnBanner" class="rnBanner hidden">
+          ⚠️ PRIMARY RN NOT NOTIFIED
+          <small>Tap “RN Notified” in Telemetry (or record an escalation) after you notify them.</small>
+        </div>
+
+        <!-- CARE -->
+        <div id="care" class="card">
+          <h3>Patient Cares</h3>
+
+          <div class="toggleList">
+            <div class="toggle">
+              <div class="left"><strong>Wash face / hands</strong><span>ADLs</span></div>
+              <input type="checkbox" id="washFace" />
+            </div>
+            <div class="toggle">
+              <div class="left"><strong>Toileting</strong><span>Assist to bathroom / bedpan</span></div>
+              <input type="checkbox" id="toileting" />
+            </div>
+            <div class="toggle">
+              <div class="left"><strong>Ambulation</strong><span>Walking / mobility</span></div>
+              <input type="checkbox" id="ambulation" />
+            </div>
+            <div class="toggle">
+              <div class="left"><strong>Primofit / Purewick</strong><span>Incontinence support</span></div>
+              <input type="checkbox" id="primofit" />
+            </div>
+          </div>
+
+          <label>Notes (required)</label>
+          <textarea id="careNotes" placeholder="What did you do? Any issues? (Required)"></textarea>
+
+          <div class="divider"></div>
+
+          <h3>Escalation</h3>
+          <div class="toggle">
+            <div class="left"><strong>Needs RN escalation</strong><span>Use if anything needs the RN’s attention</span></div>
+            <input type="checkbox" id="careEscalate" />
+          </div>
+
+          <div class="grid cols2" style="margin-top:10px;">
+            <div>
+              <label>Escalate to RN</label>
+              <select id="careEscalateRN"></select>
+            </div>
+            <div>
+              <label>Escalation details</label>
+              <input id="careEscalateDetails" placeholder="e.g., pain 8/10, SOB, IV alarm, etc." />
+            </div>
+          </div>
+
+          <div class="toggle" style="margin-top:10px;">
+            <div class="left"><strong>RN Notified</strong><span>(Optional checkbox)</span></div>
+            <input type="checkbox" id="careRnNotified" />
+          </div>
+
+          <div class="btnRow">
+            <button type="button" class="btnPrimary" onclick="saveCare()">Save Care</button>
+            <button type="button" class="btnGhost" onclick="clearCare()">Clear</button>
+          </div>
+        </div>
+
+        <!-- TELE -->
+        <div id="tele" class="card hidden">
+          <h3>Telemetry</h3>
+
+          <div class="toggleList">
+            <div class="toggle">
+              <div class="left"><strong>Telemetry battery checked</strong><span>Check every couple hours</span></div>
+              <input type="checkbox" id="batteryChecked" />
+            </div>
+          </div>
+
+          <label>Rhythm / alarm description (required)</label>
+          <textarea id="teleNotes" placeholder="Describe abnormal rhythm / alarms (Required)"></textarea>
+
+          <div class="divider"></div>
+
+          <h3>Escalation</h3>
+          <div class="grid cols2">
+            <div>
+              <label>Escalate to RN</label>
+              <select id="teleEscalateRN"></select>
+            </div>
+            <div>
+              <label>Escalation details (optional)</label>
+              <input id="teleEscalateDetails" placeholder="optional extra detail for RN note" />
+            </div>
+          </div>
+
+          <div class="toggle" style="margin-top:10px;">
+            <div class="left"><strong>RN Notified</strong><span>(Optional checkbox) — banner nags until checked for tele pts</span></div>
+            <input type="checkbox" id="rnNotified" onchange="handleRNNotified()" />
+          </div>
+
+          <div class="btnRow">
+            <button type="button" class="btnPrimary" onclick="saveTelemetry()">Save Telemetry</button>
+            <button type="button" class="btnGhost" onclick="clearTele()">Clear</button>
+          </div>
+        </div>
+
+        <!-- ACTIVITY -->
+        <div id="activity" class="card hidden">
+          <h3>Activity / Rounding</h3>
+          <div class="toggleList">
+            <div class="toggle"><div class="left"><strong>Sleeping</strong><span>Resting</span></div><input type="checkbox" id="sleeping" /></div>
+            <div class="toggle"><div class="left"><strong>Awake</strong><span>Alert</span></div><input type="checkbox" id="awake" /></div>
+            <div class="toggle"><div class="left"><strong>Visiting with family</strong><span>Family at bedside</span></div><input type="checkbox" id="family" /></div>
+            <div class="toggle"><div class="left"><strong>Toileting</strong><span>Needs / used bathroom</span></div><input type="checkbox" id="bathroom" /></div>
+          </div>
+
+          <label>Notes (optional)</label>
+          <textarea id="activityNotes" placeholder="Optional rounding notes"></textarea>
+
+          <div class="btnRow">
+            <button type="button" class="btnPrimary" onclick="saveActivity()">Save Activity</button>
+            <button type="button" class="btnGhost" onclick="clearActivity()">Clear</button>
+          </div>
+        </div>
+
+        <!-- ORAL -->
+        <div id="oral" class="card hidden">
+          <h3>Oral Care</h3>
+          <label>Status (required)</label>
+          <select id="oralStatus">
+            <option value="">Select</option>
+            <option>Completed</option>
+            <option>Refused</option>
+          </select>
+
+          <label>Notes (optional)</label>
+          <textarea id="oralNotes" placeholder="Optional notes"></textarea>
+
+          <div class="btnRow">
+            <button type="button" class="btnPrimary" onclick="saveOral()">Save Oral Care</button>
+            <button type="button" class="btnGhost" onclick="clearOral()">Clear</button>
+          </div>
+        </div>
+
+        <!-- REVIEW -->
+        <div id="review" class="card hidden">
+          <h3>Patient Documentation</h3>
+          <div class="btnRow" style="margin-top:-2px; margin-bottom:10px;">
+            <button type="button" class="btnGhost" onclick="exportPatientCSV()">Export Patient CSV</button>
+            <button type="button" class="btnDanger" onclick="clearPatientLogs()">Clear This Patient Logs</button>
+          </div>
+
+          <table>
+            <thead>
+              <tr><th style="width:150px;">Type</th><th>Details</th><th style="width:160px;">Time</th></tr>
+            </thead>
+            <tbody id="reviewTable"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* =========================
+   Storage + State
+========================= */
+const STORAGE_KEY = "cna_dashboard_rn_escalation_v1";
+let storageOK = false;
+
+let patients = {};          // { [name]: { room, bed, admission, rnNotified, primaryRN, logs: [] } }
+let currentPatient = null;  // name
+
+// Unit RN list
+let rnList = [];            // ["Smith, RN", "Jones, RN", ...]
+
+// Sidebar sorting
+let sortMode = "room";      // "room" or "name"
+
+function checkStorage(){
+  try{
+    const testKey = "__cna_test__";
+    localStorage.setItem(testKey, "1");
+    localStorage.removeItem(testKey);
+    storageOK = true;
+  }catch(e){
+    storageOK = false;
+  }
+  document.getElementById("storageWarning").classList.toggle("hidden", storageOK);
+}
+
+function saveStore(){
+  if(!storageOK) return;
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ patients, currentPatient, sortMode, rnList }));
+  }catch(e){
+    storageOK = false;
+    document.getElementById("storageWarning").classList.remove("hidden");
+  }
+}
+
+function loadStore(){
+  if(!storageOK) return;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    patients = parsed.patients || {};
+    currentPatient = parsed.currentPatient || null;
+    sortMode = parsed.sortMode || "room";
+    rnList = Array.isArray(parsed.rnList) ? parsed.rnList : [];
+  }catch(e){}
+}
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=> t.style.display="none", 1600);
+}
+
+function requireField(val, msg){
+  if(!val || String(val).trim()===""){
+    alert(msg);
+    return false;
+  }
+  return true;
+}
+
+function nowStamp(){
+  const d = new Date();
+  return d.toLocaleString([], { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function escapeHtml(str){
+  return String(str || "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+/* =========================
+   RN list helpers
+========================= */
+function normalizeRNName(s){
+  return String(s || "").trim().replace(/\s+/g, " ");
+}
+
+function addRN(){
+  const raw = document.getElementById("rnAddName").value;
+  const name = normalizeRNName(raw);
+  if(!requireField(name, "RN name is required")) return;
+
+  // prevent duplicates (case-insensitive)
+  const exists = rnList.some(x => x.toLowerCase() === name.toLowerCase());
+  if(!exists) rnList.push(name);
+
+  rnList.sort((a,b)=>a.localeCompare(b));
+
+  document.getElementById("rnAddName").value = "";
+  saveStore();
+  rebuildRNSelects();
+  toast("RN added");
+}
+
+function clearRNList(){
+  if(!confirm("Clear the Unit RN List?")) return;
+  rnList = [];
+  saveStore();
+  rebuildRNSelects();
+  toast("RN list cleared");
+}
+
+function buildRNOptionsHTML(includeNone=true){
+  let html = "";
+  if(includeNone) html += `<option value="">— Select RN —</option>`;
+  rnList.forEach(rn => {
+    html += `<option value="${escapeHtml(rn)}">${escapeHtml(rn)}</option>`;
+  });
+  return html;
+}
+
+function rebuildRNSelects(){
+  // Add Patient RN selectors
+  const addSel = document.getElementById("primaryRNSelect");
+  addSel.innerHTML = `<option value="">— Select RN —</option>` + buildRNOptionsHTML(false);
+
+  // Per-patient RN selectors (patient info card)
+  const patientSel = document.getElementById("patientRNSelect");
+  patientSel.innerHTML = `<option value="">— Select RN —</option>` + buildRNOptionsHTML(false);
+
+  // Escalation selectors
+  document.getElementById("careEscalateRN").innerHTML = `<option value="">— Select RN —</option>` + buildRNOptionsHTML(false);
+  document.getElementById("teleEscalateRN").innerHTML = `<option value="">— Select RN —</option>` + buildRNOptionsHTML(false);
+
+  // After rebuilding, re-apply current patient's defaults
+  applyPatientRNToUI();
+}
+
+/* =========================
+   Tabs
+========================= */
+function setActiveTab(tab){
+  document.querySelectorAll(".tabBtn").forEach(b=>b.classList.remove("active"));
+  const btn = document.getElementById("tabBtn-" + tab);
+  if(btn) btn.classList.add("active");
+}
+function showTab(tab){
+  ["care","tele","activity","oral","review"].forEach(id => {
+    document.getElementById(id).classList.add("hidden");
+  });
+  document.getElementById(tab).classList.remove("hidden");
+  setActiveTab(tab);
+}
+
+/* =========================
+   RN banner
+========================= */
+let rnInterval = null;
+let rnFlash = false;
+function startRNWarning(){
+  const banner = document.getElementById("rnBanner");
+  stopRNWarning();
+  banner.classList.remove("hidden");
+  rnInterval = setInterval(()=>{
+    rnFlash = !rnFlash;
+    banner.style.transform = rnFlash ? "scale(1.01)" : "scale(1.0)";
+  }, 2 * 60 * 1000);
+  banner.style.transform = "scale(1.01)";
+  setTimeout(()=> banner.style.transform="scale(1.0)", 250);
+}
+function stopRNWarning(){
+  const banner = document.getElementById("rnBanner");
+  banner.classList.add("hidden");
+  banner.style.transform = "scale(1.0)";
+  if(rnInterval) clearInterval(rnInterval);
+  rnInterval = null;
+}
+function handleRNNotified(){
+  if(!currentPatient || !patients[currentPatient]) return;
+  patients[currentPatient].rnNotified = document.getElementById("rnNotified").checked;
+
+  const admission = patients[currentPatient].admission || "";
+  const isTele = admission.includes("Tele");
+  if(isTele && !patients[currentPatient].rnNotified) startRNWarning();
+  else stopRNWarning();
+
+  saveStore();
+  renderSidebar();
+}
+
+/* =========================
+   Patient selection helpers
+========================= */
+function rebuildPatientSelect(){
+  const sel = document.getElementById("patientSelect");
+  sel.innerHTML = `<option value="">Select a patient</option>`;
+  Object.keys(patients).sort().forEach(name=>{
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  if(currentPatient && patients[currentPatient]){
+    sel.value = currentPatient;
+  }
+}
+
+function patientSortKey(name){
+  const p = patients[name] || {};
+  const roomNum = parseInt(String(p.room||"").replace(/\D+/g,""), 10);
+  const roomKey = Number.isFinite(roomNum) ? roomNum : 999999;
+  const bedKey = String(p.bed||"").toUpperCase();
+  return { roomKey, bedKey, nameKey: name.toUpperCase() };
+}
+
+function getSortedPatientNames(){
+  const names = Object.keys(patients);
+  if(sortMode === "name"){
+    return names.sort((a,b)=> a.localeCompare(b));
+  }
+  return names.sort((a,b)=>{
+    const ka = patientSortKey(a);
+    const kb = patientSortKey(b);
+    if(ka.roomKey !== kb.roomKey) return ka.roomKey - kb.roomKey;
+    if(ka.bedKey !== kb.bedKey) return ka.bedKey.localeCompare(kb.bedKey);
+    return ka.nameKey.localeCompare(kb.nameKey);
+  });
+}
+
+function sortModeToggle(){
+  sortMode = (sortMode === "room") ? "name" : "room";
+  saveStore();
+  renderSidebar();
+  document.getElementById("sortModeLabel").textContent = (sortMode === "room") ? "Room" : "Name";
+}
+
+function renderSidebar(){
+  const list = document.getElementById("patientList");
+  const filter = document.getElementById("roomFilter").value.trim();
+  const sorted = getSortedPatientNames();
+
+  list.innerHTML = "";
+
+  const filtered = sorted.filter(name=>{
+    const p = patients[name] || {};
+    if(!filter) return true;
+    return String(p.room||"").includes(filter);
+  });
+
+  if(filtered.length === 0){
+    list.innerHTML = `<div class="muted">No patients match that room filter.</div>`;
+    return;
+  }
+
+  filtered.forEach(name=>{
+    const p = patients[name] || {};
+    const isActive = (name === currentPatient);
+    const logCount = (p.logs || []).length;
+
+    const rnFlag = (String(p.admission||"").includes("Tele") && !p.rnNotified) ? "RN!" : "";
+    const rnName = p.primaryRN ? ` • RN: ${p.primaryRN}` : "";
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "patientItem" + (isActive ? " active" : "");
+    item.onclick = () => {
+      currentPatient = name;
+      document.getElementById("patientSelect").value = name;
+      loadPatient(false);
+      toast(`Switched to ${name}`);
+    };
+
+    item.innerHTML = `
+      <div class="left">
+        <strong>Room ${escapeHtml(p.room || "—")}${p.bed ? " / " + escapeHtml(p.bed) : ""} — ${escapeHtml(name)}</strong>
+        <span>${escapeHtml(p.admission || "—")} • Logs: ${logCount}${rnFlag ? " • " + rnFlag : ""}${rnName ? escapeHtml(rnName) : ""}</span>
+      </div>
+      <div class="badge">${escapeHtml(p.room || "—")}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+/* =========================
+   Patient RN assignment
+========================= */
+function applyPatientRNToUI(){
+  if(!currentPatient || !patients[currentPatient]) return;
+  const p = patients[currentPatient];
+  const assigned = p.primaryRN || "";
+
+  // Patient info card selectors
+  document.getElementById("patientRNSelect").value = rnList.some(r=>r===assigned) ? assigned : "";
+  document.getElementById("patientRNText").value = rnList.some(r=>r===assigned) ? "" : assigned;
+
+  // Escalation RN defaults
+  document.getElementById("careEscalateRN").value = rnList.some(r=>r===assigned) ? assigned : "";
+  document.getElementById("teleEscalateRN").value = rnList.some(r=>r===assigned) ? assigned : "";
+}
+
+function savePatientRNFromSelect(){
+  if(!currentPatient || !patients[currentPatient]) return;
+  const val = document.getElementById("patientRNSelect").value;
+  if(val){
+    patients[currentPatient].primaryRN = val;
+    document.getElementById("patientRNText").value = "";
+    applyPatientRNToUI();
+    saveStore();
+    renderSidebar();
+    toast("Primary RN assigned");
+  }
+}
+
+function savePatientRNFromText(){
+  if(!currentPatient || !patients[currentPatient]) return;
+  const val = normalizeRNName(document.getElementById("patientRNText").value);
+  if(val){
+    patients[currentPatient].primaryRN = val;
+    document.getElementById("patientRNSelect").value = "";
+    applyPatientRNToUI();
+    saveStore();
+    renderSidebar();
+    toast("Primary RN assigned");
+  }
+}
+
+/* =========================
+   Header + load
+========================= */
+function updateHeaderMeta(){
+  const pill = document.getElementById("pillPatient");
+  if(!currentPatient || !patients[currentPatient]){
+    pill.textContent = "No patient selected";
+    return;
+  }
+  const p = patients[currentPatient];
+  const rn = p.primaryRN ? ` • RN: ${p.primaryRN}` : "";
+  pill.textContent = `${currentPatient} • Room ${p.room || "—"}${p.bed ? "/" + p.bed : ""}${rn}`;
+  document.getElementById("patientInfoLine").textContent =
+    `Room/Bed: ${p.room || "—"} / ${p.bed || "—"} • Admission: ${p.admission || "—"} • Logs: ${(p.logs||[]).length} • Primary RN: ${p.primaryRN || "—"}`;
+}
+
+function addPatient(){
+  const name = document.getElementById("patientName").value.trim();
+  const room = document.getElementById("room").value.trim();
+  const bed  = document.getElementById("bed").value.trim();
+  const admission = document.getElementById("admissionType").value;
+
+  if(!requireField(name, "Patient name is required")) return;
+  if(!requireField(room, "Room # is required")) return;
+  if(!requireField(bed, "Bed # is required")) return;
+  if(!requireField(admission, "Admission type is required")) return;
+
+  // RN assignment for new patient (optional)
+  const rnFromSelect = document.getElementById("primaryRNSelect").value;
+  const rnFromText = normalizeRNName(document.getElementById("primaryRNText").value);
+  const chosenRN = rnFromSelect || rnFromText || "";
+
+  patients[name] = patients[name] || { logs: [] };
+  patients[name].room = room;
+  patients[name].bed = bed;
+  patients[name].admission = admission;
+  patients[name].rnNotified = !!patients[name].rnNotified;
+  patients[name].primaryRN = chosenRN;
+
+  if(!Array.isArray(patients[name].logs)) patients[name].logs = [];
+
+  currentPatient = name;
+
+  // clear add form
+  document.getElementById("patientName").value = "";
+  document.getElementById("room").value = "";
+  document.getElementById("bed").value = "";
+  document.getElementById("admissionType").value = "";
+  document.getElementById("primaryRNSelect").value = "";
+  document.getElementById("primaryRNText").value = "";
+
+  rebuildPatientSelect();
+  renderSidebar();
+  rebuildRNSelects();
+  loadPatient(true);
+  saveStore();
+  toast("Patient saved");
+}
+
+function loadPatient(forceShow){
+  const selVal = document.getElementById("patientSelect").value;
+  if(selVal) currentPatient = selVal;
+
+  if(!currentPatient || !patients[currentPatient]){
+    document.getElementById("mainSection").classList.add("hidden");
+    stopRNWarning();
+    updateHeaderMeta();
+    saveStore();
+    renderSidebar();
+    return;
+  }
+
+  // Ensure per-patient logs
+  if(!Array.isArray(patients[currentPatient].logs)) patients[currentPatient].logs = [];
+
+  document.getElementById("mainSection").classList.remove("hidden");
+
+  // Tele RN banner behavior
+  const p = patients[currentPatient];
+  const isTele = String(p.admission || "").includes("Tele");
+  document.getElementById("rnNotified").checked = !!p.rnNotified;
+  if(isTele && !p.rnNotified) startRNWarning();
+  else stopRNWarning();
+
+  rebuildRNSelects();   // ensures escalation drop-downs exist
+  applyPatientRNToUI(); // default escalation RN to patient RN
+  refreshReview();
+  renderSidebar();
+  updateHeaderMeta();
+  saveStore();
+
+  if(forceShow) showTab("care");
+}
+
+/* =========================
+   PER-PATIENT logging only
+========================= */
+function logToCurrentPatient(type, details){
+  if(!currentPatient || !patients[currentPatient]) return;
+  if(!Array.isArray(patients[currentPatient].logs)) patients[currentPatient].logs = [];
+  patients[currentPatient].logs.push({ type, details, time: nowStamp() });
+
+  saveStore();
+  refreshReview();
+  renderSidebar();
+  updateHeaderMeta();
+  toast("Saved");
+}
+
+function refreshReview(){
+  const tbody = document.getElementById("reviewTable");
+  tbody.innerHTML = "";
+
+  if(!currentPatient || !patients[currentPatient]) return;
+
+  const logs = (patients[currentPatient].logs || []);
+  if(logs.length === 0){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">No documentation yet for this patient.</td></tr>`;
+    return;
+  }
+
+  [...logs].reverse().forEach(l=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(l.type)}</strong></td>
+      <td>${escapeHtml(l.details)}</td>
+      <td>${escapeHtml(l.time)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* =========================
+   Escalation helpers
+========================= */
+function buildEscalationText(where, enabled, rn, details, rnNotified){
+  if(!enabled) return "";
+  const who = rn ? rn : "(RN not selected)";
+  const d = details ? details : "(no details)";
+  const notified = rnNotified ? "YES" : "NO";
+  return ` | ESCALATION (${where}): To ${who} • Details: ${d} • RN Notified: ${notified}`;
+}
+
+/* =========================
+   Tab save/clear
+========================= */
+function saveCare(){
+  const notes = document.getElementById("careNotes").value.trim();
+  if(!requireField(notes, "Care notes are required")) return;
+
+  const tasks = [];
+  if(document.getElementById("washFace").checked) tasks.push("Washed face/hands");
+  if(document.getElementById("toileting").checked) tasks.push("Toileting");
+  if(document.getElementById("ambulation").checked) tasks.push("Ambulated");
+  if(document.getElementById("primofit").checked) tasks.push("Primofit/Purewick");
+
+  const escalate = document.getElementById("careEscalate").checked;
+  const escRN = document.getElementById("careEscalateRN").value || (patients[currentPatient]?.primaryRN || "");
+  const escDetails = normalizeRNName(document.getElementById("careEscalateDetails").value);
+  const escNotified = document.getElementById("careRnNotified").checked;
+
+  let detail = `${tasks.length ? tasks.join(", ") : "No boxes checked"} — Notes: ${notes}`;
+  detail += buildEscalationText("Care", escalate, escRN, escDetails, escNotified);
+
+  // If escalation says RN notified, set patient rnNotified true (helps tele banner too)
+  if(escNotified){
+    patients[currentPatient].rnNotified = true;
+    document.getElementById("rnNotified").checked = true;
+    handleRNNotified();
+  }
+
+  logToCurrentPatient("Care", detail);
+  clearCare(false);
+}
+
+function clearCare(clearNotes=true){
+  document.getElementById("washFace").checked = false;
+  document.getElementById("toileting").checked = false;
+  document.getElementById("ambulation").checked = false;
+  document.getElementById("primofit").checked = false;
+  if(clearNotes) document.getElementById("careNotes").value = "";
+
+  document.getElementById("careEscalate").checked = false;
+  document.getElementById("careEscalateDetails").value = "";
+  document.getElementById("careRnNotified").checked = false;
+  // keep RN selection as default; do not clear careEscalateRN
+}
+
+function saveTelemetry(){
+  const notes = document.getElementById("teleNotes").value.trim();
+  if(!requireField(notes, "Telemetry description is required")) return;
+
+  const battery = document.getElementById("batteryChecked").checked ? "Battery checked" : "Battery not checked";
+
+  // escalation RN default to patient primary RN if dropdown empty
+  const escRN = document.getElementById("teleEscalateRN").value || (patients[currentPatient]?.primaryRN || "");
+  const escDetails = normalizeRNName(document.getElementById("teleEscalateDetails").value);
+
+  const rn = document.getElementById("rnNotified").checked ? "RN notified: YES" : "RN notified: NO";
+  handleRNNotified();
+
+  let detail = `${battery} | ${rn} — ${notes}`;
+  // Always include escalation line for Telemetry save (since it’s commonly the thing)
+  detail += ` | ESCALATION (Telemetry): To ${escRN ? escRN : "(RN not selected)"}${escDetails ? " • Details: " + escDetails : ""}`;
+
+  logToCurrentPatient("Telemetry", detail);
+  clearTele(false);
+}
+
+function clearTele(clearNotes=true){
+  document.getElementById("batteryChecked").checked = false;
+  if(clearNotes) document.getElementById("teleNotes").value = "";
+  document.getElementById("teleEscalateDetails").value = "";
+  // keep teleEscalateRN as default; do not clear it
+}
+
+function saveActivity(){
+  const tasks = [];
+  if(document.getElementById("sleeping").checked) tasks.push("Sleeping");
+  if(document.getElementById("awake").checked) tasks.push("Awake");
+  if(document.getElementById("family").checked) tasks.push("Visiting with family");
+  if(document.getElementById("bathroom").checked) tasks.push("Toileting");
+
+  const notes = document.getElementById("activityNotes").value.trim();
+  logToCurrentPatient("Activity", `${tasks.length ? tasks.join(", ") : "No boxes checked"}${notes ? " — Notes: " + notes : ""}`);
+  clearActivity(false);
+}
+
+function clearActivity(clearNotes=true){
+  document.getElementById("sleeping").checked = false;
+  document.getElementById("awake").checked = false;
+  document.getElementById("family").checked = false;
+  document.getElementById("bathroom").checked = false;
+  if(clearNotes) document.getElementById("activityNotes").value = "";
+}
+
+function saveOral(){
+  const status = document.getElementById("oralStatus").value;
+  if(!requireField(status, "Oral care status is required")) return;
+
+  const notes = document.getElementById("oralNotes").value.trim();
+  logToCurrentPatient("Oral Care", `${status}${notes ? " — Notes: " + notes : ""}`);
+  clearOral(false);
+}
+
+function clearOral(clearNotes=true){
+  document.getElementById("oralStatus").value = "";
+  if(clearNotes) document.getElementById("oralNotes").value = "";
+}
+
+/* =========================
+   Export/Import/Wipe
+========================= */
+function escapeCSV(v){
+  const s = String(v ?? "");
+  if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+  return s;
+}
+function safeFileName(name){
+  return String(name).replace(/[^a-z0-9_-]+/gi, "_").slice(0,60);
+}
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], { type: mime || "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportPatientCSV(){
+  if(!currentPatient || !patients[currentPatient]) return alert("Select a patient first.");
+  const p = patients[currentPatient];
+  const rows = [["Patient","Room","Bed","Admission","PrimaryRN","Type","Details","Time"]];
+  (p.logs||[]).forEach(l=>{
+    rows.push([currentPatient,p.room,p.bed,p.admission,p.primaryRN||"",l.type,l.details,l.time]);
+  });
+  const csv = rows.map(r => r.map(escapeCSV).join(",")).join("\n");
+  downloadFile(`${safeFileName(currentPatient)}_logs.csv`, csv, "text/csv;charset=utf-8");
+}
+
+function exportJSON(){
+  const payload = JSON.stringify({ patients, currentPatient, sortMode, rnList }, null, 2);
+  downloadFile("cna_dashboard_backup.json", payload, "application/json");
+}
+
+function importJSON(){
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = "application/json";
+  inp.onchange = () => {
+    const file = inp.files && inp.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        patients = parsed.patients || {};
+        currentPatient = parsed.currentPatient || null;
+        sortMode = parsed.sortMode || "room";
+        rnList = Array.isArray(parsed.rnList) ? parsed.rnList : [];
+        saveStore();
+        rebuildPatientSelect();
+        rebuildRNSelects();
+        renderSidebar();
+        loadPatient(true);
+        toast("Imported");
+      }catch(e){
+        alert("Import failed: invalid JSON.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+function clearPatientLogs(){
+  if(!currentPatient) return;
+  if(!confirm(`Clear ALL logs for ${currentPatient}?`)) return;
+  patients[currentPatient].logs = [];
+  saveStore();
+  refreshReview();
+  renderSidebar();
+  updateHeaderMeta();
+  toast("Cleared logs");
+}
+
+function wipeAll(){
+  if(!confirm("Wipe ALL patients and logs? This cannot be undone.")) return;
+  patients = {};
+  currentPatient = null;
+  rnList = [];
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  rebuildPatientSelect();
+  rebuildRNSelects();
+  renderSidebar();
+  loadPatient(true);
+  toast("Wiped");
+}
+
+/* =========================
+   Init
+========================= */
+function init(){
+  checkStorage();
+  loadStore();
+
+  rebuildPatientSelect();
+  rebuildRNSelects();
+  renderSidebar();
+  document.getElementById("sortModeLabel").textContent = (sortMode === "room") ? "Room" : "Name";
+
+  if(currentPatient && patients[currentPatient]){
+    document.getElementById("patientSelect").value = currentPatient;
+    loadPatient(true);
+  } else {
+    updateHeaderMeta();
+    document.getElementById("mainSection").classList.add("hidden");
+  }
+
+  showTab("care");
+}
+init();
+</script>
+
+<!-- Service worker registration for offline/PWA -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(console.error);
+    });
+  }
+</script>
+</body>
+</html>
