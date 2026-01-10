@@ -16,6 +16,8 @@
     --bg:#f3f4f6; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e5e7eb;
     --danger:#b91c1c; --dangerBg:#fee2e2; --primary:#2563eb; --primaryBg:#dbeafe;
     --shadow: 0 6px 18px rgba(15, 23, 42, 0.08); --radius: 16px;
+    --okBg:#ecfdf5; --okBorder:#10b98133; --okText:#065f46;
+    --warnBg:#fff7ed; --warnBorder:#fb923c33; --warnText:#9a3412;
   }
   *{ box-sizing:border-box; }
   html,body{ height:100%; }
@@ -32,13 +34,17 @@
     padding:12px 16px;
     border-bottom:1px solid var(--border);
   }
-  .headerRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1200px; margin:0 auto; }
+  .headerRow{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    max-width:1200px; margin:0 auto;
+  }
   h1{ margin:0; font-size:22px; }
   .muted{ color:var(--muted); font-size:14px; margin:6px 0 0; }
   .pill{
     display:inline-flex; align-items:center; gap:8px;
     padding:10px 12px; border-radius:999px; background:var(--card);
     border:1px solid var(--border);
+    font-size:14px;
   }
   .warnBanner{
     max-width:1200px; margin:10px auto 0;
@@ -57,10 +63,7 @@
     grid-template-columns: 1fr;
   }
   @media (min-width: 820px){
-    .shell{
-      grid-template-columns: 260px 1fr;
-      align-items:start;
-    }
+    .shell{ grid-template-columns: 290px 1fr; align-items:start; }
   }
 
   .card{
@@ -107,7 +110,7 @@
     display:flex;
     flex-direction:column;
     gap:10px;
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 210px);
     overflow:auto;
     padding-right: 4px;
   }
@@ -117,59 +120,49 @@
     padding:10px 10px;
     background:#fff;
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     justify-content:space-between;
     gap:10px;
-    min-height:54px;
+    min-height:60px;
     text-align:left;
   }
-  .patientItem .left{
+  .patientItem.active{
+    background: var(--primaryBg);
+    border-color: rgba(37,99,235,0.35);
+  }
+  .patientLeft{
     display:flex;
     flex-direction:column;
-    gap:2px;
+    gap:4px;
     min-width:0;
   }
-  .patientItem .left strong{
+  .patientLeft strong{
     font-size:15px;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .patientItem .left span{
+  .patientLeft .sub{
     font-size:12px;
     color:var(--muted);
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
   }
-
-  /* Patient tile status icons (chips) */
-  .statusRow{
-    display:flex;
-    gap:6px;
-    flex-wrap:nowrap;
-    align-items:center;
-  }
-  .statusChip{
-    width:28px;
-    height:28px;
-    border-radius:999px;
+  .nextDue{
+    font-size:12px;
+    padding:6px 8px;
+    border-radius:12px;
     border:1px solid var(--border);
-    background:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:16px;
-    line-height:1;
+    background:#f8fafc;
+    color:var(--muted);
+    flex:0 0 auto;
+    max-width: 130px;
   }
-  .chip-tele { background:#eef2ff; border-color: rgba(37,99,235,0.25); }
-  .chip-rn   { background:#fff1f2; border-color: rgba(185,28,28,0.25); }
-  .chip-bat  { background:#fff7ed; border-color: rgba(234,88,12,0.25); }
+  .nextDue.ok{ background:var(--okBg); border-color:var(--okBorder); color:var(--okText); }
+  .nextDue.warn{ background:var(--warnBg); border-color:var(--warnBorder); color:var(--warnText); }
 
-  .patientItem.active{
-    background: var(--primaryBg);
-    border-color: rgba(37,99,235,0.35);
-  }
+  .divider{ height:1px; background:var(--border); margin:12px 0; }
 
   /* Tabs */
   .tabBar{
@@ -189,16 +182,7 @@
   }
   .tabBtn.active{ background:var(--primaryBg); border-color:rgba(37,99,235,0.35); color:#1d4ed8; }
 
-  .rnBanner{
-    position:sticky; top: calc(env(safe-area-inset-top) + 78px + 64px);
-    z-index:60; border-radius:14px; padding:12px 14px;
-    background:var(--dangerBg); border:1px solid rgba(185,28,28,0.25);
-    color:var(--danger); font-weight:800; text-align:center;
-    box-shadow:0 10px 25px rgba(185,28,28,0.12);
-    margin-bottom:12px; user-select:none;
-  }
-  .rnBanner small{ display:block; font-weight:600; margin-top:4px; color:rgba(185,28,28,0.85); }
-
+  /* Toggle rows */
   .toggleList{ display:grid; gap:10px; }
   .toggle{
     display:flex; align-items:center; justify-content:space-between;
@@ -210,13 +194,65 @@
   .toggle .left span{ font-size:13px; color:var(--muted); }
   .toggle input[type="checkbox"]{ width:26px; height:26px; accent-color:var(--primary); }
 
-  .divider{ height:1px; background:var(--border); margin:12px 0; }
-
+  /* Review table */
   table{ width:100%; border-collapse:collapse; border-radius:14px; overflow:hidden; border:1px solid var(--border); }
   th,td{ padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
   th{ text-align:left; font-size:13px; color:var(--muted); background:#f8fafc; }
   td{ font-size:14px; }
   tr:last-child td{ border-bottom:0; }
+
+  /* Hourly schedule */
+  .hourBlock{
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    margin-bottom:12px;
+  }
+  .hourHeader{
+    background:#f8fafc;
+    border-bottom:1px solid var(--border);
+    padding:10px 12px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .hourHeader span{ color:var(--muted); font-weight:700; font-size:13px; }
+  .hourTasks{ padding:10px 12px; display:grid; gap:10px; }
+  .taskRow{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px;
+    background:#fff;
+  }
+  .taskRow .meta{
+    min-width:0;
+  }
+  .taskRow .meta strong{
+    display:block;
+    font-size:14px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .taskRow .meta small{
+    display:block;
+    color:var(--muted);
+    margin-top:2px;
+    font-size:12px;
+  }
+  .taskRow input[type="checkbox"]{
+    width:26px;
+    height:26px;
+    accent-color: var(--primary);
+    margin-top:2px;
+    flex: 0 0 auto;
+  }
 
   .toast{
     position:fixed; left:50%; transform:translateX(-50%);
@@ -234,12 +270,9 @@
     <div class="headerRow">
       <div>
         <h1>CNA Task Dashboard</h1>
-        <p class="muted">filter by RN • icons for tele/RN/battery reminders</p>
+        <p class="muted">Next task due on patient tiles • Hour-by-hour schedule view</p>
       </div>
-      <div class="pill">
-        <span>👤</span>
-        <span id="pillPatient">No patient selected</span>
-      </div>
+      <div class="pill" id="shiftPill">Shift: Day</div>
     </div>
 
     <div id="storageWarning" class="warnBanner hidden">
@@ -255,11 +288,17 @@
       <div class="card">
         <h2>Patients</h2>
 
-        <label>Filter by Room #</label>
-        <input id="roomFilter" placeholder="e.g., 214" inputmode="numeric" oninput="renderSidebar()" />
+        <label>Shift</label>
+        <select id="shiftSelect" onchange="setShift(this.value)">
+          <option value="day">Day (07–19)</option>
+          <option value="night">Night (19–07)</option>
+        </select>
 
         <label>Filter by RN</label>
-        <select id="rnFilter" onchange="renderSidebar()"></select>
+        <select id="rnFilter" onchange="renderSidebar(); renderHourly();"></select>
+
+        <label>Filter by Room #</label>
+        <input id="roomFilter" placeholder="e.g., 214" inputmode="numeric" oninput="renderSidebar(); renderHourly();" />
 
         <label>Quick select</label>
         <select id="patientSelect" onchange="loadPatient(true)"></select>
@@ -281,10 +320,6 @@
           <button type="button" class="btnPrimary" onclick="addRN()">Add RN</button>
           <button type="button" class="btnDanger" onclick="clearRNList()">Clear RN List</button>
         </div>
-
-        <p class="muted" style="margin-top:10px;">
-          Tip: choose an RN above to show only their patients.
-        </p>
       </div>
     </div>
 
@@ -362,13 +397,9 @@
             <button type="button" class="tabBtn" id="tabBtn-activity" onclick="showTab('activity')">Activity</button>
             <button type="button" class="tabBtn" id="tabBtn-oral" onclick="showTab('oral')">Oral Care</button>
             <button type="button" class="tabBtn" id="tabBtn-comm" onclick="showTab('comm')">Communication</button>
+            <button type="button" class="tabBtn" id="tabBtn-hourly" onclick="showTab('hourly'); renderHourly();">Shift Schedule</button>
             <button type="button" class="tabBtn" id="tabBtn-review" onclick="showTab('review')">Review</button>
           </div>
-        </div>
-
-        <div id="rnBanner" class="rnBanner hidden">
-          ⚠️ PRIMARY RN NOT NOTIFIED (Tele patient)
-          <small>Use Telemetry tab and check RN Notified.</small>
         </div>
 
         <!-- CARE -->
@@ -397,74 +428,59 @@
           <label>Notes (required)</label>
           <textarea id="careNotes" placeholder="What did you do? Any issues? (Required)"></textarea>
 
-          <div class="divider"></div>
-
-          <div class="toggle">
-            <div class="left"><strong>Escalated to RN</strong><span>Optional</span></div>
-            <input type="checkbox" id="careEscalated" onchange="toggleEscalationUI('care')" />
-          </div>
-
-          <div id="careEscSection" class="hidden">
-            <div class="grid cols2" style="margin-top:10px;">
-              <div>
-                <label>RN</label>
-                <select id="careEscRN"></select>
-              </div>
-              <div>
-                <label>Escalation details</label>
-                <input id="careEscDetails" placeholder="what needs attention?" />
-              </div>
-            </div>
-
-            <div class="toggle" style="margin-top:10px;">
-              <div class="left"><strong>RN Notified</strong><span>(Optional)</span></div>
-              <input type="checkbox" id="careRnNotified" />
-            </div>
-          </div>
-
           <div class="btnRow">
             <button type="button" class="btnPrimary" onclick="saveCare()">Save Care</button>
             <button type="button" class="btnGhost" onclick="clearCare()">Clear</button>
           </div>
         </div>
 
-        <!-- TELE -->
+        <!-- TELEMETRY -->
         <div id="tele" class="card hidden">
           <h3>Telemetry</h3>
 
           <div class="toggleList">
             <div class="toggle">
-              <div class="left"><strong>Telemetry battery checked</strong><span>Check every couple hours</span></div>
+              <div class="left"><strong>Telemetry battery checked</strong><span>Suggested q2h (reminders appear in schedule)</span></div>
               <input type="checkbox" id="batteryChecked" />
             </div>
           </div>
 
-          <label>Rhythm / alarm description (required)</label>
-          <textarea id="teleNotes" placeholder="Describe abnormal rhythm / alarms (Required)"></textarea>
+          <label>Telemetry note (optional)</label>
+          <textarea id="teleNotes" placeholder="Optional: any notes on telemetry check"></textarea>
 
           <div class="divider"></div>
 
           <div class="toggle">
-            <div class="left"><strong>Escalated to RN</strong><span>Optional</span></div>
-            <input type="checkbox" id="teleEscalated" onchange="toggleEscalationUI('tele')" />
+            <div class="left"><strong>Abnormal event</strong><span>If checked, you can escalate to RN</span></div>
+            <input type="checkbox" id="teleAbnormal" onchange="toggleTeleAbnormal()" />
           </div>
 
-          <div id="teleEscSection" class="hidden">
-            <div class="grid cols2" style="margin-top:10px;">
-              <div>
-                <label>RN</label>
-                <select id="teleEscRN"></select>
+          <div id="teleAbnormalSection" class="hidden">
+            <label>Abnormal details (required)</label>
+            <textarea id="teleAbnormalDetails" placeholder="Describe rhythm/alarm, what happened, what you saw (Required if abnormal)"></textarea>
+
+            <div class="toggle" style="margin-top:10px;">
+              <div class="left"><strong>Escalated to RN</strong><span>Optional but recommended if abnormal</span></div>
+              <input type="checkbox" id="teleEscalated" onchange="toggleTeleEscalation()" />
+            </div>
+
+            <div id="teleEscSection" class="hidden">
+              <div class="grid cols2" style="margin-top:10px;">
+                <div>
+                  <label>RN</label>
+                  <select id="teleEscRN"></select>
+                </div>
+                <div>
+                  <label>Escalation details</label>
+                  <input id="teleEscDetails" placeholder="what did you report?" />
+                </div>
               </div>
-              <div>
-                <label>Escalation details</label>
-                <input id="teleEscDetails" placeholder="optional extra detail" />
+
+              <div class="toggle" style="margin-top:10px;">
+                <div class="left"><strong>RN Notified</strong><span>Mark only if you actually notified</span></div>
+                <input type="checkbox" id="teleRnNotified" />
               </div>
             </div>
-          </div>
-
-          <div class="toggle" style="margin-top:10px;">
-            <div class="left"><strong>RN Notified</strong><span>Stops 👩‍⚕️ reminder icon</span></div>
-            <input type="checkbox" id="rnNotified" onchange="handleRNNotified()" />
           </div>
 
           <div class="btnRow">
@@ -522,7 +538,7 @@
 
           <div class="toggle">
             <div class="left"><strong>Escalated to RN</strong><span>Optional</span></div>
-            <input type="checkbox" id="commEscalated" onchange="toggleEscalationUI('comm')" />
+            <input type="checkbox" id="commEscalated" onchange="toggleCommEscalation()" />
           </div>
 
           <div id="commEscSection" class="hidden">
@@ -538,7 +554,7 @@
             </div>
 
             <div class="toggle" style="margin-top:10px;">
-              <div class="left"><strong>RN Notified</strong><span>(Optional)</span></div>
+              <div class="left"><strong>RN Notified</strong><span>Mark only if you actually notified</span></div>
               <input type="checkbox" id="commRnNotified" />
             </div>
           </div>
@@ -547,6 +563,13 @@
             <button type="button" class="btnPrimary" onclick="saveCommunication()">Save Communication</button>
             <button type="button" class="btnGhost" onclick="clearCommunication()">Clear</button>
           </div>
+        </div>
+
+        <!-- HOURLY SCHEDULE -->
+        <div id="hourly" class="card hidden">
+          <h3>Shift Schedule</h3>
+          <p class="muted" id="hourlyMeta">—</p>
+          <div id="hourlyContainer"></div>
         </div>
 
         <!-- REVIEW -->
@@ -573,16 +596,27 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = "cna_dashboard_rn_filter_v1";
+/* =========================
+   Storage + State
+========================= */
+const STORAGE_KEY = "cna_dashboard_schedule_v1";
 let storageOK = false;
 
-let patients = {};
+let patients = {}; // { [name]: { room, bed, admission, primaryRN, logs: [] } }
 let currentPatient = null;
 
 let rnList = [];
 let sortMode = "room";
 
-/* Storage */
+// schedule completion store: { [taskKey]: true }
+let completedTasks = {}; // persisted
+
+// shift
+let currentShift = "day"; // day/night
+
+/* =========================
+   Storage
+========================= */
 function checkStorage(){
   try{
     const testKey = "__cna_test__";
@@ -597,7 +631,9 @@ function checkStorage(){
 function saveStore(){
   if(!storageOK) return;
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ patients, currentPatient, sortMode, rnList }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      patients, currentPatient, sortMode, rnList, completedTasks, currentShift
+    }));
   }catch(e){
     storageOK = false;
     document.getElementById("storageWarning").classList.remove("hidden");
@@ -613,10 +649,14 @@ function loadStore(){
     currentPatient = parsed.currentPatient || null;
     sortMode = parsed.sortMode || "room";
     rnList = Array.isArray(parsed.rnList) ? parsed.rnList : [];
+    completedTasks = parsed.completedTasks || {};
+    currentShift = parsed.currentShift || "day";
   }catch(e){}
 }
 
-/* Utility */
+/* =========================
+   Utilities
+========================= */
 function toast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -631,10 +671,6 @@ function requireField(val, msg){
   }
   return true;
 }
-function nowStamp(){
-  const d = new Date();
-  return d.toLocaleString([], { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-}
 function escapeHtml(str){
   return String(str || "")
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
@@ -643,8 +679,63 @@ function escapeHtml(str){
 function normalizeName(s){
   return String(s || "").trim().replace(/\s+/g, " ");
 }
+function pad2(n){ return String(n).padStart(2,"0"); }
+function toISODate(d){
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+function parseTimeHHMM(hhmm){
+  const [h,m] = hhmm.split(":").map(x=>parseInt(x,10));
+  return { h, m };
+}
+function buildDateTimeForShift(hhmm){
+  // For day shift, times belong to "today" (including 08/12/16 etc)
+  // For night shift, 19-23 are today, 00-06 are next day
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const { h, m } = parseTimeHHMM(hhmm);
+  let d = new Date(base);
+  d.setHours(h, m, 0, 0);
 
-/* RN list */
+  if(currentShift === "night"){
+    // if time is after midnight but part of night shift, bump to next day
+    if(h < 12) d.setDate(d.getDate() + 1);
+    // if time is 19-23 it stays today
+  }
+  return d;
+}
+function formatHHMM(d){
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/* =========================
+   Shift
+========================= */
+function setShift(val){
+  currentShift = val;
+  document.getElementById("shiftSelect").value = val;
+  document.getElementById("shiftPill").textContent = `Shift: ${val === "day" ? "Day" : "Night"}`;
+  saveStore();
+  renderSidebar();
+  renderHourly();
+}
+function getShiftHours(){
+  // Day: 07-18 (12 hours), Night: 19-06 (12 hours)
+  if(currentShift === "day"){
+    return Array.from({length:12},(_,i)=> pad2(7+i)+":00"); // 07:00..18:00
+  }
+  // night 19:00..23:00 + 00:00..06:00
+  return ["19:00","20:00","21:00","22:00","23:00","00:00","01:00","02:00","03:00","04:00","05:00","06:00"];
+}
+
+/* =========================
+   RN list + RN filter
+========================= */
+function buildRNOptionsHTML(includeNone=true){
+  let html = "";
+  if(includeNone) html += `<option value="">— Select RN —</option>`;
+  rnList.forEach(rn => { html += `<option value="${escapeHtml(rn)}">${escapeHtml(rn)}</option>`; });
+  return html;
+}
 function addRN(){
   const raw = document.getElementById("rnAddName").value;
   const name = normalizeName(raw);
@@ -655,43 +746,24 @@ function addRN(){
   rnList.sort((a,b)=>a.localeCompare(b));
 
   document.getElementById("rnAddName").value = "";
-  saveStore();
   rebuildRNSelects();
+  saveStore();
   toast("RN added");
 }
 function clearRNList(){
   if(!confirm("Clear the Unit RN List?")) return;
   rnList = [];
-  saveStore();
   rebuildRNSelects();
+  saveStore();
   toast("RN list cleared");
 }
-function buildRNOptionsHTML(includeNone=true){
-  let html = "";
-  if(includeNone) html += `<option value="">— Select RN —</option>`;
-  rnList.forEach(rn => { html += `<option value="${escapeHtml(rn)}">${escapeHtml(rn)}</option>`; });
-  return html;
-}
-function rebuildRNSelects(){
-  document.getElementById("primaryRNSelect").innerHTML = buildRNOptionsHTML(true);
-  document.getElementById("patientRNSelect").innerHTML = buildRNOptionsHTML(true);
-
-  document.getElementById("careEscRN").innerHTML  = buildRNOptionsHTML(true);
-  document.getElementById("teleEscRN").innerHTML  = buildRNOptionsHTML(true);
-  document.getElementById("commEscRN").innerHTML  = buildRNOptionsHTML(true);
-
-  applyPatientRNToUI();
-  buildRNFilterOptions();
-}
-
-/* RN filter options */
 function buildRNFilterOptions(){
   const sel = document.getElementById("rnFilter");
   if(!sel) return;
 
   const current = sel.value || "__ALL__";
-
   const rnSet = new Set(rnList);
+
   Object.values(patients).forEach(p => {
     if(p && p.primaryRN) rnSet.add(String(p.primaryRN));
   });
@@ -709,75 +781,34 @@ function buildRNFilterOptions(){
   if([...sel.options].some(o => o.value === current)) sel.value = current;
   else sel.value = "__ALL__";
 }
+function rebuildRNSelects(){
+  document.getElementById("primaryRNSelect").innerHTML = buildRNOptionsHTML(true);
+  document.getElementById("patientRNSelect").innerHTML = buildRNOptionsHTML(true);
+  document.getElementById("teleEscRN").innerHTML = buildRNOptionsHTML(true);
+  document.getElementById("commEscRN").innerHTML = buildRNOptionsHTML(true);
+  applyPatientRNToUI();
+  buildRNFilterOptions();
+}
 
-/* Tabs */
+/* =========================
+   Tabs
+========================= */
 function setActiveTab(tab){
   document.querySelectorAll(".tabBtn").forEach(b=>b.classList.remove("active"));
   const btn = document.getElementById("tabBtn-" + tab);
   if(btn) btn.classList.add("active");
 }
 function showTab(tab){
-  ["care","tele","activity","oral","comm","review"].forEach(id => document.getElementById(id).classList.add("hidden"));
+  ["care","tele","activity","oral","comm","hourly","review"].forEach(id => {
+    document.getElementById(id).classList.add("hidden");
+  });
   document.getElementById(tab).classList.remove("hidden");
   setActiveTab(tab);
 }
 
-/* Escalation UI */
-function toggleEscalationUI(kind){
-  const map = {
-    care: { cb:"careEscalated", sec:"careEscSection", rn:"careEscRN" },
-    tele: { cb:"teleEscalated", sec:"teleEscSection", rn:"teleEscRN" },
-    comm: { cb:"commEscalated", sec:"commEscSection", rn:"commEscRN" },
-  };
-  const m = map[kind];
-  if(!m) return;
-  const on = document.getElementById(m.cb).checked;
-  document.getElementById(m.sec).classList.toggle("hidden", !on);
-
-  if(on && currentPatient && patients[currentPatient]){
-    const assigned = patients[currentPatient].primaryRN || "";
-    if(assigned && document.getElementById(m.rn).value === "" && rnList.includes(assigned)){
-      document.getElementById(m.rn).value = assigned;
-    }
-  }
-}
-
-/* Tele banner */
-function isTelePatient(p){ return String(p.admission || "").includes("Tele"); }
-
-let rnInterval = null;
-let rnFlash = false;
-function startRNWarning(){
-  const banner = document.getElementById("rnBanner");
-  stopRNWarning();
-  banner.classList.remove("hidden");
-  rnInterval = setInterval(()=>{
-    rnFlash = !rnFlash;
-    banner.style.transform = rnFlash ? "scale(1.01)" : "scale(1.0)";
-  }, 2 * 60 * 1000);
-  banner.style.transform = "scale(1.01)";
-  setTimeout(()=> banner.style.transform="scale(1.0)", 250);
-}
-function stopRNWarning(){
-  const banner = document.getElementById("rnBanner");
-  banner.classList.add("hidden");
-  banner.style.transform = "scale(1.0)";
-  if(rnInterval) clearInterval(rnInterval);
-  rnInterval = null;
-}
-function handleRNNotified(){
-  if(!currentPatient || !patients[currentPatient]) return;
-  patients[currentPatient].rnNotified = document.getElementById("rnNotified").checked;
-
-  const isTele = isTelePatient(patients[currentPatient]);
-  if(isTele && !patients[currentPatient].rnNotified) startRNWarning();
-  else stopRNWarning();
-
-  saveStore();
-  renderSidebar();
-}
-
-/* Sorting + sidebar */
+/* =========================
+   Patient sorting
+========================= */
 function rebuildPatientSelect(){
   const sel = document.getElementById("patientSelect");
   sel.innerHTML = `<option value="">Select a patient</option>`;
@@ -810,20 +841,107 @@ function sortModeToggle(){
   sortMode = (sortMode === "room") ? "name" : "room";
   saveStore();
   renderSidebar();
+  renderHourly();
   document.getElementById("sortModeLabel").textContent = (sortMode === "room") ? "Room" : "Name";
 }
-function batteryOverdue(p){
-  if(!isTelePatient(p)) return false;
-  const last = Number(p.lastTeleBatteryCheckMs || 0);
-  if(!last) return true;
-  return (Date.now() - last) > (2 * 60 * 60 * 1000);
+
+/* =========================
+   Task engine
+========================= */
+function isTeleAdmission(p){ return String(p.admission||"").includes("Telemetry"); }
+function isOPIB(p){ return String(p.admission||"").includes("OPIB"); }
+function isInpatientNoTele(p){ return String(p.admission||"").includes("No Tele"); }
+function isSwingBed(p){ return String(p.admission||"").includes("Swing"); }
+
+function getShiftTaskTimesForPatient(p){
+  // Returns list of task instances: { time:"HH:MM", type:"Vitals"/"Tele Battery"/"Oral Care"/"Round", desc:"..." }
+  const tasks = [];
+
+  // Vitals schedule based on admission type
+  if(isTeleAdmission(p) || isOPIB(p)){
+    // q4 vitals
+    const times = (currentShift==="day") ? ["08:00","12:00","16:00"] : ["20:00","00:00","04:00"];
+    times.forEach(t=>tasks.push({ time:t, type:"Vitals", desc:"Vitals (q4)" }));
+    // tele battery q2
+    if(isTeleAdmission(p)){
+      const bt = (currentShift==="day") ? ["09:00","11:00","13:00","15:00","17:00"] : ["21:00","23:00","01:00","03:00","05:00"];
+      bt.forEach(t=>tasks.push({ time:t, type:"Tele Battery", desc:"Check tele battery" }));
+    }
+  } else if(isInpatientNoTele(p)){
+    // q6 vitals
+    const times = (currentShift==="day") ? ["08:00","14:00"] : ["20:00","02:00"];
+    times.forEach(t=>tasks.push({ time:t, type:"Vitals", desc:"Vitals (q6)" }));
+  } else if(isSwingBed(p)){
+    // once per shift
+    const t = (currentShift==="day") ? "08:00" : "20:00";
+    tasks.push({ time:t, type:"Vitals", desc:"Vitals (once/shift)" });
+  }
+
+  // Oral care once/shift (can adjust later)
+  const oralT = (currentShift==="day") ? "10:00" : "22:00";
+  tasks.push({ time: oralT, type:"Oral Care", desc:"Offer oral care" });
+
+  // Hourly round task (lightweight)
+  getShiftHours().forEach(hh=>{
+    tasks.push({ time: hh, type:"Round", desc:"Hourly round" });
+  });
+
+  // sort by time in shift order
+  const order = getShiftHours();
+  tasks.sort((a,b)=> order.indexOf(a.time) - order.indexOf(b.time));
+  return tasks;
 }
 
+function getTaskKey(patientName, time, type){
+  // Scoped per day+shift so it resets each shift
+  const today = toISODate(new Date());
+  return `${today}|${currentShift}|${patientName}|${time}|${type}`;
+}
+function isTaskComplete(patientName, time, type){
+  return !!completedTasks[getTaskKey(patientName,time,type)];
+}
+function setTaskComplete(patientName, time, type, val){
+  const k = getTaskKey(patientName,time,type);
+  if(val) completedTasks[k] = true;
+  else delete completedTasks[k];
+  saveStore();
+}
+
+function getNextDueForPatient(name){
+  const p = patients[name];
+  if(!p) return null;
+
+  // apply RN filter / room filter outside; this only computes due
+  const instances = getShiftTaskTimesForPatient(p);
+
+  // compute "now" relative to shift
+  const now = new Date();
+
+  // find first incomplete task that is at/after now, else earliest incomplete (overdue)
+  let upcoming = null;
+  let overdue = null;
+
+  for(const inst of instances){
+    if(isTaskComplete(name, inst.time, inst.type)) continue;
+    const dt = buildDateTimeForShift(inst.time);
+    if(dt >= now){
+      upcoming = { ...inst, dt };
+      break;
+    } else {
+      if(!overdue) overdue = { ...inst, dt };
+    }
+  }
+
+  return upcoming || overdue; // can be null if all complete
+}
+
+/* =========================
+   Sidebar render
+========================= */
 function renderSidebar(){
   const list = document.getElementById("patientList");
   const roomFilter = document.getElementById("roomFilter").value.trim();
-  const rnFilterSel = document.getElementById("rnFilter");
-  const rnFilter = rnFilterSel ? rnFilterSel.value : "__ALL__";
+  const rnFilter = document.getElementById("rnFilter").value || "__ALL__";
 
   const sorted = getSortedPatientNames();
   list.innerHTML = "";
@@ -831,10 +949,8 @@ function renderSidebar(){
   const filtered = sorted.filter(name=>{
     const p = patients[name] || {};
     const roomOK = !roomFilter ? true : String(p.room||"").includes(roomFilter);
-
     const assignedRN = String(p.primaryRN || "").trim();
     const rnOK = (rnFilter === "__ALL__") ? true : (assignedRN === rnFilter);
-
     return roomOK && rnOK;
   });
 
@@ -846,19 +962,25 @@ function renderSidebar(){
   filtered.forEach(name=>{
     const p = patients[name] || {};
     const isActive = (name === currentPatient);
-    const logCount = (p.logs || []).length;
 
-    const tele = isTelePatient(p);           // 📈
-    const rnNeeds = tele && !p.rnNotified;   // 👩‍⚕️
-    const bat = batteryOverdue(p);           // 🔋
+    const next = getNextDueForPatient(name);
+    const now = new Date();
 
-    let chips = `<div class="statusRow">`;
-    if(tele)    chips += `<div class="statusChip chip-tele" title="Telemetry patient">📈</div>`;
-    if(rnNeeds) chips += `<div class="statusChip chip-rn" title="RN not notified yet">👩‍⚕️</div>`;
-    if(bat)     chips += `<div class="statusChip chip-bat" title="Telemetry battery check overdue">🔋</div>`;
-    chips += `</div>`;
-
-    const rnLine = p.primaryRN ? ` • RN: ${p.primaryRN}` : "";
+    let nextText = "No tasks";
+    let cls = "";
+    if(next){
+      const isOverdue = next.dt < now;
+      nextText = `${next.time} • ${next.desc}`;
+      cls = isOverdue ? "warn" : "ok";
+      // if it's within 30 minutes, make it warn as attention
+      if(!isOverdue){
+        const mins = Math.round((next.dt - now)/60000);
+        if(mins <= 30) cls = "warn";
+      }
+    } else {
+      nextText = "All done";
+      cls = "ok";
+    }
 
     const item = document.createElement("button");
     item.type = "button";
@@ -870,19 +992,126 @@ function renderSidebar(){
       toast(`Switched to ${name}`);
     };
 
+    const rnLine = p.primaryRN ? `RN: ${p.primaryRN}` : "RN: —";
+
     item.innerHTML = `
-      <div class="left">
+      <div class="patientLeft">
         <strong>${escapeHtml(p.room || "—")}${p.bed ? "/" + escapeHtml(p.bed) : ""} — ${escapeHtml(name)}</strong>
-        <span>${escapeHtml(p.admission || "—")} • Logs: ${logCount}${rnLine ? escapeHtml(rnLine) : ""}</span>
+        <div class="sub">${escapeHtml(p.admission || "—")} • ${escapeHtml(rnLine)}</div>
       </div>
-      ${chips}
+      <div class="nextDue ${cls}" title="Next task due">${escapeHtml(nextText)}</div>
     `;
 
     list.appendChild(item);
   });
 }
 
-/* Patient RN assignment */
+/* =========================
+   Hourly schedule render
+========================= */
+function renderHourly(){
+  const container = document.getElementById("hourlyContainer");
+  const meta = document.getElementById("hourlyMeta");
+  if(!container || !meta) return;
+
+  const rnFilter = document.getElementById("rnFilter").value || "__ALL__";
+  const roomFilter = document.getElementById("roomFilter").value.trim();
+
+  const hours = getShiftHours();
+  const now = new Date();
+  const today = toISODate(new Date());
+
+  meta.textContent = `Date: ${today} • Shift: ${currentShift === "day" ? "Day (07–19)" : "Night (19–07)"} • Showing tasks for selected filters`;
+
+  // choose patients by filters
+  const patientNames = getSortedPatientNames().filter(name=>{
+    const p = patients[name] || {};
+    const roomOK = !roomFilter ? true : String(p.room||"").includes(roomFilter);
+    const assignedRN = String(p.primaryRN || "").trim();
+    const rnOK = (rnFilter === "__ALL__") ? true : (assignedRN === rnFilter);
+    return roomOK && rnOK;
+  });
+
+  container.innerHTML = "";
+
+  hours.forEach(hh=>{
+    const block = document.createElement("div");
+    block.className = "hourBlock";
+
+    const dt = buildDateTimeForShift(hh);
+    const isNowHour = (formatHHMM(dt) === formatHHMM(new Date(new Date(dt).setMinutes(0,0,0))));
+    const deltaMin = Math.round((dt - now)/60000);
+
+    let suffix = "";
+    if(deltaMin < -60) suffix = "Past";
+    else if(deltaMin < 0) suffix = "Recently";
+    else if(deltaMin === 0) suffix = "Now";
+    else suffix = `In ${deltaMin}m`;
+
+    block.innerHTML = `
+      <div class="hourHeader">
+        <div>${hh}</div>
+        <span>${suffix}</span>
+      </div>
+      <div class="hourTasks" id="tasks-${hh.replace(":","")}"></div>
+    `;
+
+    container.appendChild(block);
+
+    const taskWrap = block.querySelector(".hourTasks");
+
+    // tasks due this hour for each patient
+    let any = false;
+    patientNames.forEach(name=>{
+      const p = patients[name];
+      if(!p) return;
+
+      const tasks = getShiftTaskTimesForPatient(p).filter(t=>t.time === hh);
+      tasks.forEach(t=>{
+        any = true;
+        const checked = isTaskComplete(name, t.time, t.type);
+
+        const row = document.createElement("div");
+        row.className = "taskRow";
+        row.innerHTML = `
+          <div class="meta">
+            <strong>${escapeHtml(name)} (Room ${escapeHtml(p.room || "—")}${p.bed ? "/" + escapeHtml(p.bed) : ""})</strong>
+            <small>${escapeHtml(t.desc)} • ${escapeHtml(t.type)}</small>
+          </div>
+          <input type="checkbox" ${checked ? "checked" : ""} />
+        `;
+
+        const cb = row.querySelector("input[type=checkbox]");
+        cb.addEventListener("change", () => {
+          setTaskComplete(name, t.time, t.type, cb.checked);
+
+          // log completion action (optional)
+          logToCurrentPatientIfSelected(name, `Task complete: ${t.time} • ${t.desc} (${t.type})`);
+
+          renderSidebar();
+          // keep schedule in sync
+          renderHourly();
+        });
+
+        taskWrap.appendChild(row);
+      });
+    });
+
+    if(!any){
+      taskWrap.innerHTML = `<div class="muted">No tasks scheduled this hour (with current filters).</div>`;
+    }
+  });
+}
+
+function logToCurrentPatientIfSelected(name, detail){
+  // Only auto-log if the patient is currently selected (keeps logs clean)
+  if(currentPatient !== name) return;
+  logToCurrentPatient("Task", detail);
+}
+
+/* =========================
+   Patient RN assignment
+========================= */
 function applyPatientRNToUI(){
   if(!currentPatient || !patients[currentPatient]) return;
   const p = patients[currentPatient];
@@ -896,7 +1125,12 @@ function savePatientRNFromSelect(){
   if(val){
     patients[currentPatient].primaryRN = val;
     document.getElementById("patientRNText").value = "";
-    saveStore(); rebuildRNSelects(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
+    rebuildRNSelects();
+    saveStore();
+    renderSidebar();
+    renderHourly();
+    updateHeaderMeta();
+    toast("Primary RN assigned");
   }
 }
 function savePatientRNFromText(){
@@ -905,22 +1139,32 @@ function savePatientRNFromText(){
   if(val){
     patients[currentPatient].primaryRN = val;
     document.getElementById("patientRNSelect").value = "";
-    saveStore(); rebuildRNSelects(); renderSidebar(); updateHeaderMeta(); toast("Primary RN assigned");
+    rebuildRNSelects();
+    saveStore();
+    renderSidebar();
+    renderHourly();
+    updateHeaderMeta();
+    toast("Primary RN assigned");
   }
 }
 
-/* Header + load */
+/* =========================
+   Patient load + header
+========================= */
 function updateHeaderMeta(){
-  const pill = document.getElementById("pillPatient");
+  const pill = document.getElementById("shiftPill");
+  pill.textContent = `Shift: ${currentShift === "day" ? "Day" : "Night"}`;
+
+  const info = document.getElementById("patientInfoLine");
+  const sel = document.getElementById("pillPatient"); // not used now
+
   if(!currentPatient || !patients[currentPatient]){
-    pill.textContent = "No patient selected";
+    info.textContent = "—";
     return;
   }
   const p = patients[currentPatient];
-  const rn = p.primaryRN ? ` • RN: ${p.primaryRN}` : "";
-  pill.textContent = `${currentPatient} • Room ${p.room || "—"}${p.bed ? "/" + p.bed : ""}${rn}`;
-  document.getElementById("patientInfoLine").textContent =
-    `Room/Bed: ${p.room || "—"} / ${p.bed || "—"} • Admission: ${p.admission || "—"} • Logs: ${(p.logs||[]).length} • Primary RN: ${p.primaryRN || "—"}`;
+  info.textContent =
+    `Room/Bed: ${p.room || "—"} / ${p.bed || "—"} • Admission: ${p.admission || "—"} • Primary RN: ${p.primaryRN || "—"} • Logs: ${(p.logs||[]).length}`;
 }
 
 function addPatient(){
@@ -943,12 +1187,7 @@ function addPatient(){
   patients[name].bed = bed;
   patients[name].admission = admission;
   patients[name].primaryRN = chosenRN;
-
-  if(isTelePatient(patients[name])) patients[name].rnNotified = false;
-  else patients[name].rnNotified = !!patients[name].rnNotified;
-
   if(!Array.isArray(patients[name].logs)) patients[name].logs = [];
-  if(!patients[name].lastTeleBatteryCheckMs) patients[name].lastTeleBatteryCheckMs = 0;
 
   currentPatient = name;
 
@@ -963,6 +1202,7 @@ function addPatient(){
   rebuildRNSelects();
   buildRNFilterOptions();
   renderSidebar();
+  renderHourly();
   loadPatient(true);
   saveStore();
   toast("Patient saved");
@@ -974,57 +1214,49 @@ function loadPatient(forceShow){
 
   if(!currentPatient || !patients[currentPatient]){
     document.getElementById("mainSection").classList.add("hidden");
-    stopRNWarning();
     updateHeaderMeta();
     saveStore();
     renderSidebar();
+    renderHourly();
     return;
   }
 
   const p = patients[currentPatient];
   if(!Array.isArray(p.logs)) p.logs = [];
-  if(!p.lastTeleBatteryCheckMs) p.lastTeleBatteryCheckMs = 0;
 
   document.getElementById("mainSection").classList.remove("hidden");
-
-  const isTele = isTelePatient(p);
-  document.getElementById("rnNotified").checked = !!p.rnNotified;
-  if(isTele && !p.rnNotified) startRNWarning();
-  else stopRNWarning();
-
   rebuildRNSelects();
   applyPatientRNToUI();
   refreshReview();
   buildRNFilterOptions();
   renderSidebar();
+  renderHourly();
   updateHeaderMeta();
 
-  document.getElementById("careEscalated").checked = false;
-  document.getElementById("teleEscalated").checked = false;
-  document.getElementById("commEscalated").checked = false;
-  toggleEscalationUI("care");
-  toggleEscalationUI("tele");
-  toggleEscalationUI("comm");
+  // reset tele abnormal UI
+  clearTele(false);
 
   if(forceShow) showTab("care");
   saveStore();
 }
 
-/* Per-patient logging */
+/* =========================
+   Logging
+========================= */
 function logToCurrentPatient(type, details){
   if(!currentPatient || !patients[currentPatient]) return;
   const p = patients[currentPatient];
   if(!Array.isArray(p.logs)) p.logs = [];
-  p.logs.push({ type, details, time: nowStamp() });
+  p.logs.push({ type, details, time: new Date().toLocaleString() });
 
   saveStore();
   refreshReview();
-  buildRNFilterOptions();
-  renderSidebar();
   updateHeaderMeta();
-  toast("Saved");
 }
 
+/* =========================
+   Review table
+========================= */
 function refreshReview(){
   const tbody = document.getElementById("reviewTable");
   tbody.innerHTML = "";
@@ -1046,16 +1278,9 @@ function refreshReview(){
   });
 }
 
-/* Escalation suffix */
-function escalationSuffix(enabled, rn, details, notified){
-  if(!enabled) return "";
-  const who = rn ? rn : "(RN not selected)";
-  const d = details ? details : "(no details)";
-  const n = notified ? "YES" : "NO";
-  return ` | ESCALATED: To ${who} • Details: ${d} • RN Notified: ${n}`;
-}
-
-/* Save/Clear */
+/* =========================
+   Care
+========================= */
 function saveCare(){
   const notes = document.getElementById("careNotes").value.trim();
   if(!requireField(notes, "Care notes are required")) return;
@@ -1066,22 +1291,11 @@ function saveCare(){
   if(document.getElementById("ambulation").checked) tasks.push("Ambulated");
   if(document.getElementById("primofit").checked) tasks.push("Primofit/Purewick");
 
-  const esc = document.getElementById("careEscalated").checked;
-  const rn = document.getElementById("careEscRN").value || (patients[currentPatient]?.primaryRN || "");
-  const det = normalizeName(document.getElementById("careEscDetails").value);
-  const notified = document.getElementById("careRnNotified").checked;
-
-  let detail = `${tasks.length ? tasks.join(", ") : "No boxes checked"} — Notes: ${notes}`;
-  detail += escalationSuffix(esc, rn, det, notified);
-
-  if(notified){
-    patients[currentPatient].rnNotified = true;
-    document.getElementById("rnNotified").checked = true;
-    handleRNNotified();
-  }
-
+  const detail = `${tasks.length ? tasks.join(", ") : "No boxes checked"} — Notes: ${notes}`;
   logToCurrentPatient("Care", detail);
+
   clearCare(false);
+  toast("Saved");
 }
 function clearCare(clearNotes=true){
   document.getElementById("washFace").checked = false;
@@ -1089,42 +1303,94 @@ function clearCare(clearNotes=true){
   document.getElementById("ambulation").checked = false;
   document.getElementById("primofit").checked = false;
   if(clearNotes) document.getElementById("careNotes").value = "";
-  document.getElementById("careEscalated").checked = false;
-  document.getElementById("careEscDetails").value = "";
-  document.getElementById("careRnNotified").checked = false;
-  toggleEscalationUI("care");
 }
 
+/* =========================
+   Telemetry (abnormal triggers escalation only)
+========================= */
+function toggleTeleAbnormal(){
+  const on = document.getElementById("teleAbnormal").checked;
+  document.getElementById("teleAbnormalSection").classList.toggle("hidden", !on);
+  if(!on){
+    document.getElementById("teleEscalated").checked = false;
+    document.getElementById("teleEscSection").classList.add("hidden");
+    document.getElementById("teleAbnormalDetails").value = "";
+    document.getElementById("teleEscDetails").value = "";
+    document.getElementById("teleRnNotified").checked = false;
+  }
+}
+function toggleTeleEscalation(){
+  const on = document.getElementById("teleEscalated").checked;
+  document.getElementById("teleEscSection").classList.toggle("hidden", !on);
+  // default to patient RN if present
+  if(on && currentPatient && patients[currentPatient]){
+    const assigned = patients[currentPatient].primaryRN || "";
+    if(assigned && rnList.includes(assigned) && document.getElementById("teleEscRN").value === ""){
+      document.getElementById("teleEscRN").value = assigned;
+    }
+  }
+}
 function saveTelemetry(){
-  const notes = document.getElementById("teleNotes").value.trim();
-  if(!requireField(notes, "Telemetry description is required")) return;
+  const battery = document.getElementById("batteryChecked").checked;
+  const note = document.getElementById("teleNotes").value.trim();
 
-  const p = patients[currentPatient];
-  const batteryChecked = document.getElementById("batteryChecked").checked;
-  if(batteryChecked) p.lastTeleBatteryCheckMs = Date.now();
+  // If battery checked, mark the corresponding q2h task complete for the current hour block if it exists
+  // We'll mark the nearest current-hour tele battery task for this patient (if scheduled) complete.
+  if(currentPatient && patients[currentPatient] && battery){
+    const now = new Date();
+    const hh = `${pad2(now.getHours())}:00`;
+    // if this hour is in the shift hours and task exists
+    const shiftHours = getShiftHours();
+    if(shiftHours.includes(hh)){
+      setTaskComplete(currentPatient, hh, "Tele Battery", true);
+    }
+  }
 
-  const battery = batteryChecked ? "Battery checked" : "Battery NOT checked";
-  const rnNotified = document.getElementById("rnNotified").checked ? "RN notified: YES" : "RN notified: NO";
-  handleRNNotified();
+  let detail = "";
+  if(battery) detail += "Tele battery checked. ";
+  if(note) detail += `Note: ${note}`;
 
-  const esc = document.getElementById("teleEscalated").checked;
-  const rn = document.getElementById("teleEscRN").value || (p.primaryRN || "");
-  const det = normalizeName(document.getElementById("teleEscDetails").value);
+  const abnormal = document.getElementById("teleAbnormal").checked;
+  if(abnormal){
+    const ab = document.getElementById("teleAbnormalDetails").value.trim();
+    if(!requireField(ab, "Abnormal details are required if abnormal event is checked")) return;
 
-  let detail = `${battery} | ${rnNotified} — ${notes}`;
-  detail += escalationSuffix(esc, rn, det, document.getElementById("rnNotified").checked);
+    detail += (detail ? " | " : "") + `ABNORMAL: ${ab}`;
+
+    const escalated = document.getElementById("teleEscalated").checked;
+    if(escalated){
+      const rn = document.getElementById("teleEscRN").value || "(RN not selected)";
+      const esc = document.getElementById("teleEscDetails").value.trim() || "(no escalation details)";
+      const notified = document.getElementById("teleRnNotified").checked ? "YES" : "NO";
+      detail += ` | ESCALATED: To ${rn} • Details: ${esc} • RN Notified: ${notified}`;
+    }
+  }
+
+  if(!detail) detail = "Telemetry checked (no additional notes).";
 
   logToCurrentPatient("Telemetry", detail);
+  renderSidebar();
+  renderHourly();
+  refreshReview();
+  toast("Saved");
   clearTele(false);
 }
 function clearTele(clearNotes=true){
   document.getElementById("batteryChecked").checked = false;
   if(clearNotes) document.getElementById("teleNotes").value = "";
+  document.getElementById("teleAbnormal").checked = false;
+  document.getElementById("teleAbnormalSection").classList.add("hidden");
+  document.getElementById("teleAbnormalDetails").value = "";
   document.getElementById("teleEscalated").checked = false;
+  document.getElementById("teleEscSection").classList.add("hidden");
   document.getElementById("teleEscDetails").value = "";
-  toggleEscalationUI("tele");
+  document.getElementById("teleRnNotified").checked = false;
+  document.getElementById("teleEscRN").value = "";
 }
 
+/* =========================
+   Activity / Oral / Communication
+========================= */
 function saveActivity(){
   const tasks = [];
   if(document.getElementById("sleeping").checked) tasks.push("Sleeping");
@@ -1133,8 +1399,10 @@ function saveActivity(){
   if(document.getElementById("bathroom").checked) tasks.push("Toileting");
 
   const notes = document.getElementById("activityNotes").value.trim();
-  logToCurrentPatient("Activity", `${tasks.length ? tasks.join(", ") : "No boxes checked"}${notes ? " — Notes: " + notes : ""}`);
+  const detail = `${tasks.length ? tasks.join(", ") : "No boxes checked"}${notes ? " — Notes: " + notes : ""}`;
+  logToCurrentPatient("Activity", detail);
   clearActivity(false);
+  toast("Saved");
 }
 function clearActivity(clearNotes=true){
   document.getElementById("sleeping").checked = false;
@@ -1149,44 +1417,63 @@ function saveOral(){
   if(!requireField(status, "Oral care status is required")) return;
   const notes = document.getElementById("oralNotes").value.trim();
   logToCurrentPatient("Oral Care", `${status}${notes ? " — Notes: " + notes : ""}`);
+
+  // mark oral care scheduled task complete for its scheduled time
+  if(currentPatient && patients[currentPatient]){
+    const t = (currentShift==="day") ? "10:00" : "22:00";
+    setTaskComplete(currentPatient, t, "Oral Care", true);
+  }
+
+  renderSidebar();
+  renderHourly();
   clearOral(false);
+  toast("Saved");
 }
 function clearOral(clearNotes=true){
   document.getElementById("oralStatus").value = "";
   if(clearNotes) document.getElementById("oralNotes").value = "";
 }
 
+function toggleCommEscalation(){
+  const on = document.getElementById("commEscalated").checked;
+  document.getElementById("commEscSection").classList.toggle("hidden", !on);
+  if(on && currentPatient && patients[currentPatient]){
+    const assigned = patients[currentPatient].primaryRN || "";
+    if(assigned && rnList.includes(assigned) && document.getElementById("commEscRN").value === ""){
+      document.getElementById("commEscRN").value = assigned;
+    }
+  }
+}
 function saveCommunication(){
   const note = document.getElementById("commNote").value.trim();
   if(!requireField(note, "Communication note is required")) return;
 
-  const esc = document.getElementById("commEscalated").checked;
-  const p = patients[currentPatient];
-  const rn = document.getElementById("commEscRN").value || (p.primaryRN || "");
-  const det = normalizeName(document.getElementById("commEscDetails").value);
-  const notified = document.getElementById("commRnNotified").checked;
-
   let detail = `Note: ${note}`;
-  detail += escalationSuffix(esc, rn, det, notified);
 
-  if(notified){
-    p.rnNotified = true;
-    document.getElementById("rnNotified").checked = true;
-    handleRNNotified();
+  const esc = document.getElementById("commEscalated").checked;
+  if(esc){
+    const rn = document.getElementById("commEscRN").value || "(RN not selected)";
+    const escD = document.getElementById("commEscDetails").value.trim() || "(no escalation details)";
+    const notified = document.getElementById("commRnNotified").checked ? "YES" : "NO";
+    detail += ` | ESCALATED: To ${rn} • Details: ${escD} • RN Notified: ${notified}`;
   }
 
   logToCurrentPatient("Communication", detail);
   clearCommunication(false);
+  toast("Saved");
 }
 function clearCommunication(clearNote=true){
   if(clearNote) document.getElementById("commNote").value = "";
   document.getElementById("commEscalated").checked = false;
+  document.getElementById("commEscSection").classList.add("hidden");
+  document.getElementById("commEscRN").value = "";
   document.getElementById("commEscDetails").value = "";
   document.getElementById("commRnNotified").checked = false;
-  toggleEscalationUI("comm");
 }
 
-/* Export/Import/Wipe */
+/* =========================
+   Exports / Wipe
+========================= */
 function downloadFile(filename, content, mime){
   const blob = new Blob([content], { type: mime || "text/plain" });
   const url = URL.createObjectURL(blob);
@@ -1199,7 +1486,7 @@ function downloadFile(filename, content, mime){
   URL.revokeObjectURL(url);
 }
 function exportJSON(){
-  const payload = JSON.stringify({ patients, currentPatient, sortMode, rnList }, null, 2);
+  const payload = JSON.stringify({ patients, currentPatient, sortMode, rnList, completedTasks, currentShift }, null, 2);
   downloadFile("cna_dashboard_backup.json", payload, "application/json");
 }
 function importJSON(){
@@ -1217,11 +1504,15 @@ function importJSON(){
         currentPatient = parsed.currentPatient || null;
         sortMode = parsed.sortMode || "room";
         rnList = Array.isArray(parsed.rnList) ? parsed.rnList : [];
-        saveStore();
+        completedTasks = parsed.completedTasks || {};
+        currentShift = parsed.currentShift || "day";
+
+        setShift(currentShift);
         rebuildPatientSelect();
         rebuildRNSelects();
         buildRNFilterOptions();
         renderSidebar();
+        renderHourly();
         loadPatient(true);
         toast("Imported");
       }catch(e){
@@ -1233,28 +1524,58 @@ function importJSON(){
   inp.click();
 }
 function wipeAll(){
-  if(!confirm("Wipe ALL patients and logs? This cannot be undone.")) return;
+  if(!confirm("Wipe ALL patients, logs, and task checkoffs? This cannot be undone.")) return;
   patients = {};
   currentPatient = null;
   rnList = [];
+  completedTasks = {};
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   rebuildPatientSelect();
   rebuildRNSelects();
   buildRNFilterOptions();
   renderSidebar();
+  renderHourly();
   loadPatient(true);
   toast("Wiped");
 }
+function clearPatientLogs(){
+  if(!currentPatient) return;
+  if(!confirm(`Clear ALL logs for ${currentPatient}?`)) return;
+  patients[currentPatient].logs = [];
+  saveStore();
+  refreshReview();
+  updateHeaderMeta();
+  toast("Cleared logs");
+}
+function exportPatientCSV(){
+  if(!currentPatient || !patients[currentPatient]) return alert("Select a patient first.");
+  const p = patients[currentPatient];
+  const rows = [["Patient","Room","Bed","Admission","PrimaryRN","Type","Details","Time"]];
+  (p.logs||[]).forEach(l=>{
+    rows.push([currentPatient,p.room,p.bed,p.admission,p.primaryRN||"",l.type,l.details,l.time]);
+  });
+  const csv = rows.map(r => r.map(v => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+  }).join(",")).join("\n");
+  downloadFile(`${String(currentPatient).replace(/[^a-z0-9_-]+/gi,"_")}_logs.csv`, csv, "text/csv;charset=utf-8");
+}
 
-/* Init */
+/* =========================
+   Init
+========================= */
 function init(){
   checkStorage();
   loadStore();
+
+  document.getElementById("shiftSelect").value = currentShift;
+  document.getElementById("shiftPill").textContent = `Shift: ${currentShift === "day" ? "Day" : "Night"}`;
 
   rebuildPatientSelect();
   rebuildRNSelects();
   buildRNFilterOptions();
   renderSidebar();
+  renderHourly();
 
   document.getElementById("sortModeLabel").textContent = (sortMode === "room") ? "Room" : "Name";
 
@@ -1266,7 +1587,9 @@ function init(){
     document.getElementById("mainSection").classList.add("hidden");
   }
 
-  setInterval(() => { if(Object.keys(patients).length) renderSidebar(); }, 60 * 1000);
+  // refresh next-due every minute
+  setInterval(() => { renderSidebar(); if(!document.getElementById("hourly").classList.contains("hidden")) renderHourly(); }, 60 * 1000);
+
   showTab("care");
 }
 init();
